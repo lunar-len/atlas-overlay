@@ -122,14 +122,14 @@ The shipped `.pmtiles` file is a snapshot of the
 a fresher build, download the canonical version into the same path (one line):
 
 ```bash
-curl -L https://map.pathfinderwiki.com/data/golarion.pmtiles -o lib/pathfinder-wiki-maps/data/golarion.pmtiles
+curl -L https://map.pathfinderwiki.com/golarion.pmtiles -o lib/pathfinder-wiki-maps/data/golarion.pmtiles
 ```
 
 ---
 
 ## Development
 
-The `.pmtiles` map data (~235 MB) is **not** stored in the git repository — it
+The `.pmtiles` map data (~310 MB) is **not** stored in the git repository — it
 ships only inside the release ZIP. To set up a local dev environment after
 cloning (commands shown for bash / Git Bash; PowerShell equivalents noted
 inline):
@@ -145,8 +145,8 @@ npm install
 # bash:        mkdir -p lib/pathfinder-wiki-maps/data
 # PowerShell:  New-Item -ItemType Directory -Force lib/pathfinder-wiki-maps/data | Out-Null
 
-# Fetch the Golarion PMTiles map (~235 MB) — one line:
-curl -L https://map.pathfinderwiki.com/data/golarion.pmtiles -o lib/pathfinder-wiki-maps/data/golarion.pmtiles
+# Fetch the Golarion PMTiles map (~310 MB) — one line:
+curl -L https://map.pathfinderwiki.com/golarion.pmtiles -o lib/pathfinder-wiki-maps/data/golarion.pmtiles
 
 # Symlink the project into your Foundry Data folder
 npm run link
@@ -182,7 +182,7 @@ atlas-overlay/
 
 ## Releasing
 
-The bundled Golarion `.pmtiles` (~235 MB) exceeds GitHub's 100 MB per-file
+The bundled Golarion `.pmtiles` (~310 MB) exceeds GitHub's 100 MB per-file
 Git limit, and we don't use Git LFS to stay within the free-tier quotas.
 Instead, the map data lives only inside the release ZIP attached to each
 GitHub Release. Foundry's manifest URL points at the latest release asset,
@@ -226,7 +226,7 @@ gh release create v0.1.0 module.json module.zip --title "v0.1.0" --notes "Initia
 
 In PowerShell, run each command on a single line or split with a backtick
 `` ` `` (not `\`). The `gh` CLI uploads from your local machine, so a
-~235 MB release ZIP can take several minutes on a consumer uplink.
+~310 MB release ZIP can take several minutes on a consumer uplink.
 
 ---
 
