@@ -26,6 +26,7 @@ file can be configured per-world.
   Alt = alert ping, Shift = pull camera (GM).
 - **Manager dialogs** — list, pan to, edit, or delete every marker / path
   on the current scene from a single GM-only panel.
+- **Wiki-links** - alt-click upon points of interest to jump for their Pathfinder wiki article. 
 
 ---
 
