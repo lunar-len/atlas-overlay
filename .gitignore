@@ -1,0 +1,20 @@
+# Dependencies
+node_modules/
+
+# Editor / IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Release artifacts (built locally, uploaded to GitHub Releases)
+dist/
+*.zip
+
+# Bundled Golarion map data — distributed via GitHub Releases instead of git
+lib/pathfinder-wiki-maps/data/*.pmtiles
+
+# Logs
+*.log

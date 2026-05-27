@@ -19,3 +19,16 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+================================================================================
+
+This license applies to the Atlas Overlay module source code authored by the
+copyright holder. Third-party libraries bundled with this module retain their
+own licenses; see NOTICE.md for attributions.
+
+Cartographic data for Golarion shipped with this module is sourced from the
+PathfinderWiki mapping project (https://github.com/pf-wikis/mapping) and is
+made available under the Paizo Community Use Policy. Pathfinder and Golarion
+are trademarks of Paizo Inc. and are used under the Paizo Community Use
+Policy (https://paizo.com/community/communityuse). This module is not
+affiliated with, endorsed, sponsored, or specifically approved by Paizo Inc.

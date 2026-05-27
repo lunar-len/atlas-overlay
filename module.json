@@ -1,0 +1,42 @@
+{
+    "id": "atlas-overlay",
+    "title": "Atlas Overlay",
+    "type": "module",
+    "description": "An interactive 3D globe / 2D map overlay for Foundry VTT scenes. Place persistent markers and draw measured paths on top of a vector map, with ping-to-attention, custom marker images, and per-scene enablement. Ships with the Pathfinder Wiki Golarion tileset; arbitrary PMTiles URLs can be configured.",
+    "version": "0.1.0",
+    "compatibility": {
+        "minimum": "13",
+        "verified": "14",
+        "maximum": "14"
+    },
+    "authors": [
+        { "name": "len" }
+    ],
+    "relationships": {
+        "requires": [
+            {
+                "id": "lib-wrapper",
+                "type": "module",
+                "compatibility": { "minimum": "1.0.0.0" }
+            }
+        ]
+    },
+    "esmodules": ["scripts/module.js"],
+    "scripts": [
+        "lib/lib.js",
+        "lib/maplibre-gl/maplibre-gl.js"
+    ],
+    "styles": [
+        "styles/module.css",
+        "lib/maplibre-gl/maplibre-gl.css"
+    ],
+    "languages": [
+        { "lang": "en", "name": "English", "path": "languages/en.json" }
+    ],
+    "url": "https://github.com/lunar-len/atlas-overlay",
+    "manifest": "https://github.com/lunar-len/atlas-overlay/releases/latest/download/module.json",
+    "download": "https://github.com/lunar-len/atlas-overlay/releases/latest/download/module.zip",
+    "readme": "https://github.com/lunar-len/atlas-overlay/blob/main/README.md",
+    "license": "https://github.com/lunar-len/atlas-overlay/blob/main/LICENSE",
+    "bugs": "https://github.com/lunar-len/atlas-overlay/issues"
+}

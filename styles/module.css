@@ -1,0 +1,296 @@
+/* ── Globe container ──────────────────────────────────────────────── */
+#maplibre-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 10;
+    transition: all 0.3s ease;
+}
+
+/* ── Control buttons ──────────────────────────────────────────────── */
+.globe-control-btn {
+    position: absolute;
+    z-index: 9999;
+    background: rgba(30, 30, 46, 0.9);
+    color: #e0e0e0;
+    border: 1px solid #555;
+    border-radius: 5px;
+    padding: 4px 10px;
+    cursor: pointer;
+    user-select: none;
+    font-size: 13px;
+    line-height: 1.4;
+    transition: background 0.15s;
+}
+.globe-control-btn:hover {
+    background: rgba(50, 50, 80, 0.95);
+}
+.globe-control-btn.active {
+    background: rgba(80, 60, 140, 0.95);
+    border-color: #9988dd;
+    color: #fff;
+}
+
+
+/* ── Context menu ─────────────────────────────────────────────────── */
+#globe-context-menu {
+    position: fixed;
+    background: rgba(25, 25, 40, 0.97);
+    border: 1px solid #555;
+    border-radius: 5px;
+    padding: 4px 0;
+    z-index: 99999;
+    min-width: 160px;
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.6);
+}
+#globe-context-menu .menu-item {
+    display: block;
+    width: 100%;
+    padding: 7px 14px;
+    background: none;
+    border: none;
+    color: #e0e0e0;
+    cursor: pointer;
+    text-align: left;
+    font-size: 13px;
+    white-space: nowrap;
+}
+#globe-context-menu .menu-item:hover {
+    background: rgba(80, 70, 140, 0.7);
+}
+#globe-context-menu .menu-item.danger {
+    color: #ff7070;
+}
+#globe-context-menu .menu-item.danger:hover {
+    background: rgba(140, 40, 40, 0.6);
+}
+
+/* ── Ping animations ──────────────────────────────────────────────── */
+.globe-ping {
+    position: absolute;
+    pointer-events: none;
+    z-index: 10000;
+}
+
+.globe-ping--pulse {
+    width: 30px;
+    height: 30px;
+    margin-left: -15px;
+    margin-top: -15px;
+    border-radius: 50%;
+    animation: globe-ping-pulse 1s ease-out forwards;
+    background: rgba(255, 255, 0, 0.5);
+    border: 2px solid white;
+}
+@keyframes globe-ping-pulse {
+    0%   { transform: scale(1); opacity: 1; }
+    100% { transform: scale(2.2); opacity: 0; }
+}
+
+.globe-ping--alert {
+    width: 0;
+    height: 0;
+    margin-left: -12px;
+    border-left: 12px solid transparent;
+    border-right: 12px solid transparent;
+    border-top-color: red;
+    opacity: 0;
+    animation: globe-ping-alert 1.2s ease-out forwards;
+    box-sizing: content-box;
+}
+@keyframes globe-ping-alert {
+    0%   { transform: scale(0.7); opacity: 0.6; }
+    30%  { opacity: 1; }
+    100% { transform: scale(2.5); opacity: 0; }
+}
+
+.globe-ping--chevron {
+    width: 0;
+    height: 0;
+    margin-left: -20px;
+    margin-top: -24px;
+    border-left: 20px solid transparent;
+    border-right: 20px solid transparent;
+    border-top: 16px solid red;
+    animation: globe-ping-chevron 1s ease-out forwards;
+}
+.globe-ping--chevron::after {
+    content: '';
+    position: absolute;
+    bottom: 6px;
+    left: -16px;
+    width: 0;
+    height: 0;
+    border-left: 16px solid transparent;
+    border-right: 16px solid transparent;
+    border-top: 12px solid white;
+}
+@keyframes globe-ping-chevron {
+    0%   { transform: scale(0.8); opacity: 1; }
+    50%  { transform: scale(1.2); opacity: 0.8; }
+    100% { transform: scale(1); opacity: 0; }
+}
+
+/* ── Dialog extras ────────────────────────────────────────────────── */
+/* Color/background overrides removed — let Foundry's active theme (light or dark)
+ * style fonts, inputs, and buttons. We only style layout. */
+.globe-dialog-form .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-bottom: 10px;
+}
+.globe-dialog-form label {
+    font-weight: bold;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+.globe-dialog-form input[type="color"] {
+    width: 60px;
+    height: 32px;
+    padding: 2px;
+    cursor: pointer;
+}
+.globe-dialog-form input[type="checkbox"] {
+    width: auto;
+    flex: 0 0 auto;
+}
+.globe-dialog-form .checkbox-row {
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+}
+.globe-dialog-form .checkbox-row label {
+    margin: 0;
+    font-weight: normal;
+    text-transform: none;
+    letter-spacing: normal;
+    font-size: 13px;
+}
+.globe-dialog-form .globe-filepicker {
+    display: flex;
+    gap: 4px;
+}
+.globe-dialog-form .globe-filepicker input {
+    flex: 1;
+}
+.globe-dialog-form .globe-filepicker button {
+    width: 32px;
+    padding: 0;
+    cursor: pointer;
+    flex: 0 0 auto;
+}
+.globe-dialog-form .color-row {
+    flex-direction: row;
+    align-items: flex-end;
+    gap: 14px;
+    flex-wrap: wrap;
+}
+.globe-dialog-form .color-row .color-field {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+.globe-dialog-form .color-row .color-field label {
+    font-size: 10px;
+    letter-spacing: 0.03em;
+    margin: 0;
+    opacity: 0.85;
+}
+.globe-dialog-form .color-row .color-field input[type="color"] {
+    width: 54px;
+    height: 28px;
+}
+.globe-dialog-form .globe-hint {
+    margin: -4px 0 10px;
+    font-size: 11px;
+    font-style: italic;
+    opacity: 0.7;
+}
+
+/* ── Manager dialog (list of markers / paths) ─────────────────────── */
+.globe-manager {
+    max-height: 60vh;
+    overflow-y: auto;
+}
+.globe-manager-empty {
+    text-align: center;
+    padding: 20px 0;
+    font-style: italic;
+    opacity: 0.6;
+}
+.globe-manager-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+.globe-manager-table thead th {
+    text-align: left;
+    padding: 6px 8px;
+    border-bottom: 1px solid currentColor;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-weight: bold;
+    opacity: 0.7;
+}
+.globe-manager-table tbody td {
+    padding: 6px 8px;
+    border-bottom: 1px solid rgba(127,127,127,0.2);
+    vertical-align: middle;
+}
+.globe-manager-table tbody tr:hover td {
+    background: rgba(120, 100, 200, 0.12);
+}
+.globe-manager-table td.coords {
+    opacity: 0.7;
+    font-size: 11px;
+    white-space: nowrap;
+}
+.globe-manager-table td.actions {
+    text-align: right;
+    white-space: nowrap;
+    width: 1%;
+}
+.globe-manager-table td.actions button {
+    width: 28px;
+    height: 26px;
+    padding: 0;
+    margin-left: 2px;
+    cursor: pointer;
+    font-size: 12px;
+    line-height: 1;
+}
+.globe-manager-table td.actions button.danger {
+    color: #c0392b;
+}
+.globe-color-swatch {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    border: 1px solid rgba(0,0,0,0.35);
+    vertical-align: middle;
+    margin-right: 4px;
+}
+
+/* ── Settings: file-picker button next to Map Tiles URL ──────────── */
+.atlas-fp-wrap {
+    display: flex;
+    align-items: stretch;
+    gap: 4px;
+    width: 100%;
+}
+.atlas-fp-wrap > input[type="text"] {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+.atlas-fp-wrap > .atlas-fp-btn {
+    flex: 0 0 auto;
+    width: 32px;
+    padding: 0;
+    cursor: pointer;
+}

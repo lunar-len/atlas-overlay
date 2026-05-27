@@ -1,0 +1,28 @@
+{
+    "name": "atlas-overlay",
+    "version": "0.1.0",
+    "description": "Atlas Overlay — interactive 3D globe / 2D map overlay module for Foundry VTT",
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "link": "node ./build/link-foundry.js",
+        "postinstall": "npm run copy-deps",
+        "copy-deps": "npm run copy-maplibre && npm run copy-pmtiles-turf",
+        "copy-maplibre": "cpy node_modules/maplibre-gl/dist/maplibre-gl.{js,css} node_modules/maplibre-gl/LICENSE.txt lib/maplibre-gl --flat",
+        "copy-pmtiles-turf": "npx rollup -c && cpy node_modules/@turf/turf/LICENSE lib/turf --flat"
+    },
+    "license": "MIT",
+    "engines": {
+        "node": ">=20.15.0"
+    },
+    "devDependencies": {
+        "@rollup/plugin-commonjs": "^28.0.6",
+        "@rollup/plugin-node-resolve": "^16.0.1",
+        "@turf/turf": "^7.2.0",
+        "cpy-cli": "^5.0.0",
+        "maplibre-gl": "^5.6.1",
+        "pmtiles": "^4.3.0",
+        "prompts": "^2.4.2",
+        "rollup": "^4.44.1"
+    }
+}
