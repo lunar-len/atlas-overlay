@@ -107,7 +107,7 @@ https://github.com/lunar-len/atlas-overlay/releases/latest/download/module.json
 
 By default Atlas Overlay loads the Golarion tileset from
 `modules/atlas-overlay/lib/pathfinder-wiki-maps/data/golarion.pmtiles`. To use
-a different map, go to **Module Settings → Atlas Overlay → Map Tiles URL** and
+a different map, go to **Module Settings → Atlas Overlay → Map Tiles File** and
 either:
 
 - Click the file-picker button next to the field to browse for a `.pmtiles`
@@ -119,11 +119,10 @@ either:
 
 The shipped `.pmtiles` file is a snapshot of the
 [PathfinderWiki mapping project](https://github.com/pf-wikis/mapping). To pull
-a fresher build, download the canonical version into the same path:
+a fresher build, download the canonical version into the same path (one line):
 
 ```bash
-curl -L https://map.pathfinderwiki.com/data/golarion.pmtiles \
-  -o lib/pathfinder-wiki-maps/data/golarion.pmtiles
+curl -L https://map.pathfinderwiki.com/data/golarion.pmtiles -o lib/pathfinder-wiki-maps/data/golarion.pmtiles
 ```
 
 ---
@@ -132,7 +131,8 @@ curl -L https://map.pathfinderwiki.com/data/golarion.pmtiles \
 
 The `.pmtiles` map data (~235 MB) is **not** stored in the git repository — it
 ships only inside the release ZIP. To set up a local dev environment after
-cloning:
+cloning (commands shown for bash / Git Bash; PowerShell equivalents noted
+inline):
 
 ```bash
 git clone https://github.com/lunar-len/atlas-overlay.git
@@ -141,10 +141,12 @@ cd atlas-overlay
 # Install Node dependencies and copy bundled libs into lib/
 npm install
 
-# Fetch the Golarion PMTiles map (~235 MB)
-mkdir -p lib/pathfinder-wiki-maps/data
-curl -L https://map.pathfinderwiki.com/data/golarion.pmtiles \
-  -o lib/pathfinder-wiki-maps/data/golarion.pmtiles
+# Make sure the data directory exists
+# bash:        mkdir -p lib/pathfinder-wiki-maps/data
+# PowerShell:  New-Item -ItemType Directory -Force lib/pathfinder-wiki-maps/data | Out-Null
+
+# Fetch the Golarion PMTiles map (~235 MB) — one line:
+curl -L https://map.pathfinderwiki.com/data/golarion.pmtiles -o lib/pathfinder-wiki-maps/data/golarion.pmtiles
 
 # Symlink the project into your Foundry Data folder
 npm run link
@@ -162,7 +164,7 @@ atlas-overlay/
 │   ├── map.js                 # MapLibre init + PMTiles protocol
 │   ├── hooks.js               # libWrapper hooks (canvas.ping passthrough)
 │   ├── markers-on-globe.js    # Event dispatcher across marker subclasses
-│   ├── utils.js
+│   ├── utils.js               # Shared helpers (context menu, etc.)
 │   └── markers/
 │       ├── marker.js          # Base class
 │       ├── custom.js          # User-placed markers
@@ -180,49 +182,51 @@ atlas-overlay/
 
 ## Releasing
 
-PMTiles is too large for the free GitHub Git tier (and we don't use Git LFS).
+The bundled Golarion `.pmtiles` (~235 MB) exceeds GitHub's 100 MB per-file
+Git limit, and we don't use Git LFS to stay within the free-tier quotas.
 Instead, the map data lives only inside the release ZIP attached to each
-GitHub Release. Foundry's manifest URL points at the latest release asset, so
-end users always get a self-contained download.
+GitHub Release. Foundry's manifest URL points at the latest release asset,
+so end users always get a self-contained download.
 
-### Step-by-step
+Packaging is automated by [`.github/workflows/release.yml`](.github/workflows/release.yml),
+which runs on the GitHub Actions runner — no local upload bandwidth is needed.
 
-1. **Bump versions** in `module.json` and `package.json`, commit, push.
-2. **Build the release ZIP** locally. Make sure the Golarion `.pmtiles` is
-   present in `lib/pathfinder-wiki-maps/data/` first (see the curl command
-   above). Then run (one line — Windows `tar` ships with Win10+):
+### Recommended flow (GitHub Actions)
 
-   ```bash
-   tar -a -cf module.zip module.json scripts styles languages lib LICENSE NOTICE.md README.md
-   ```
-
-   This creates `module.zip` containing everything the module needs at
-   runtime, including the bundled PMTiles file. In PowerShell, run as
-   shown above or split lines with a backtick `` ` `` (not `\`).
-
-3. **Tag the release** and push the tag:
-
-   ```bash
-   git tag v0.1.0
-   git push --tags
-   ```
-
-4. **Create the GitHub Release** and attach the assets (uses
-   [`gh` CLI](https://cli.github.com)):
-
-   ```bash
-   gh release create v0.1.0 module.json module.zip \
-     --title "v0.1.0" \
-     --notes "Initial pre-release."
-   ```
-
-   Or do the same via the GitHub web UI:
-   *Releases → Draft a new release → choose tag → drag both
-   `module.json` and `module.zip` into the assets area → Publish.*
+1. **Bump versions** in `module.json` and `package.json`, commit, push to `main`.
+2. **Create a release in the GitHub web UI:**
+   *Releases → Draft a new release → pick or create the `vX.Y.Z` tag → title
+   → notes → Publish.*
+3. The workflow triggers on the `published` event. It downloads the canonical
+   Golarion PMTiles from `map.pathfinderwiki.com`, zips the module, and
+   attaches `module.json` + `module.zip` to the release. Typical runtime:
+   2–3 minutes.
 
 The `manifest` and `download` URLs inside `module.json` use the
 `/releases/latest/download/...` path, so each new release automatically
 becomes the one Foundry users get when installing.
+
+### Manual fallback (no Actions / local-only)
+
+If you need to build the ZIP yourself:
+
+```bash
+# Make sure lib/pathfinder-wiki-maps/data/golarion.pmtiles is present first
+# (see the curl command in the Development section).
+
+tar -a -cf module.zip module.json scripts styles languages lib LICENSE NOTICE.md README.md
+```
+
+Then attach `module.json` and `module.zip` to the release manually via web UI,
+or with `gh`:
+
+```bash
+gh release create v0.1.0 module.json module.zip --title "v0.1.0" --notes "Initial pre-release."
+```
+
+In PowerShell, run each command on a single line or split with a backtick
+`` ` `` (not `\`). The `gh` CLI uploads from your local machine, so a
+~235 MB release ZIP can take several minutes on a consumer uplink.
 
 ---
 
