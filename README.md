@@ -190,15 +190,15 @@ end users always get a self-contained download.
 1. **Bump versions** in `module.json` and `package.json`, commit, push.
 2. **Build the release ZIP** locally. Make sure the Golarion `.pmtiles` is
    present in `lib/pathfinder-wiki-maps/data/` first (see the curl command
-   above). Then:
+   above). Then run (one line — Windows `tar` ships with Win10+):
 
    ```bash
-   tar -a -cf module.zip \
-     module.json scripts styles languages lib LICENSE NOTICE.md README.md
+   tar -a -cf module.zip module.json scripts styles languages lib LICENSE NOTICE.md README.md
    ```
 
    This creates `module.zip` containing everything the module needs at
-   runtime, including the bundled PMTiles file.
+   runtime, including the bundled PMTiles file. In PowerShell, run as
+   shown above or split lines with a backtick `` ` `` (not `\`).
 
 3. **Tag the release** and push the tag:
 
