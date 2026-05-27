@@ -26,7 +26,15 @@ file can be configured per-world.
   Alt = alert ping, Shift = pull camera (GM).
 - **Manager dialogs** — list, pan to, edit, or delete every marker / path
   on the current scene from a single GM-only panel.
-- **Wiki-links** - alt-click upon points of interest to jump for their Pathfinder wiki article. 
+- **Wiki-links** — Alt-click any built-in point of interest (city, region,
+  nation, geographic feature, …) to open its PathfinderWiki article in a
+  new tab. Available to Trusted Players and above; the cursor turns into
+  a pointer on Alt-hover to signal which features are clickable.
+- **Scene token & note mirroring** — every token placed on the underlying
+  Foundry scene, and every journal pin (note), is automatically reflected
+  as a marker on the globe and stays in sync with the source (create,
+  move, update, delete). Clicking a mirrored note opens the linked Journal
+  Entry if the user has at least Limited permission on it.
 
 ---
 
@@ -78,11 +86,13 @@ https://github.com/lunar-len/atlas-overlay/releases/latest/download/module.json
 | Long-press 500 ms | Empty space | Ping (broadcast to all players) |
 | Long-press + Alt | Empty space | Alert ping |
 | Long-press + Shift | Empty space | Pull camera (GM) |
+| Alt + click | On a bundled PathfinderWiki POI | Open the wiki page in a new tab (Trusted Player+) |
 | Right-click | Empty space (GM) | New marker dialog |
-| Right-click | On a marker (GM) | Edit / Delete / Open Journal |
+| Right-click | On a custom marker (GM) | Edit / Delete / Open Journal |
 | Right-click | On a path (GM) | Edit Path / Delete |
-| Double-click | Marker with Journal | Open the linked Journal Entry |
-| Left-click + drag | Marker (GM) | Move marker; release auto-saves |
+| Double-click | Custom marker with Journal | Open the linked Journal Entry |
+| Left-click | On a mirrored scene note | Open the linked Journal Entry (if permitted) |
+| Left-click + drag | Custom marker (GM) | Move marker; release auto-saves |
 | Escape / right-click | While drawing a path | Cancel without saving |
 | Double-click / Enter | While drawing a path | Finish and save the path |
 
