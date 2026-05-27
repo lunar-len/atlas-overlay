@@ -1,0 +1,60 @@
+# Build a Foundry-installable module.zip and attach it (with module.json) to a
+# GitHub Release. Runs on the GitHub runner — no local upload bandwidth needed.
+#
+# Workflow:
+#   1. Create a release in the GitHub web UI:
+#      Releases → Draft a new release → pick / create the `vX.Y.Z` tag,
+#      set a title, type release notes, then click "Publish release".
+#   2. This workflow fires on the `published` event, downloads the Golarion
+#      PMTiles map from the canonical upstream, zips the module, and attaches
+#      `module.json` + `module.zip` to the release.
+
+name: Release
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # PMTiles is gitignored; pull the canonical Golarion build from the wiki.
+      - name: Fetch Golarion PMTiles
+        run: |
+          mkdir -p lib/pathfinder-wiki-maps/data
+          curl -fL --retry 3 --retry-delay 5 \
+            https://map.pathfinderwiki.com/data/golarion.pmtiles \
+            -o lib/pathfinder-wiki-maps/data/golarion.pmtiles
+          ls -lh lib/pathfinder-wiki-maps/data/golarion.pmtiles
+
+      - name: Build module.zip
+        run: |
+          zip -r module.zip \
+            module.json \
+            scripts \
+            styles \
+            languages \
+            lib \
+            LICENSE \
+            NOTICE.md \
+            README.md
+          ls -lh module.zip
+
+      - name: Attach assets to the release
+        uses: ncipollo/release-action@v1
+        with:
+          allowUpdates: true
+          tag: ${{ github.event.release.tag_name }}
+          name: ${{ github.event.release.name }}
+          body: ${{ github.event.release.body }}
+          prerelease: ${{ github.event.release.prerelease }}
+          draft: ${{ github.event.release.unpublished }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          artifacts: 'module.json,module.zip'
