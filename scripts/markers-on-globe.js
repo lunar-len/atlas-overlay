@@ -8,6 +8,17 @@ export class MapMarkers {
         this.is2D = false;
         this.hooks = new Set();
 
+        // The globe HTML overlay covers the whole viewport, but Foundry's PIXI
+        // canvas underneath still receives pointer events — so e.g. shift+click
+        // on the globe also fires Foundry's own shift-modified click handlers,
+        // which can pan the underlying scene around. Disable pointer events on
+        // the Foundry canvas while the overlay is shown; restored on destroy.
+        this._foundryCanvasEl = canvas?.app?.view ?? document.getElementById("board");
+        if (this._foundryCanvasEl) {
+            this._foundryCanvasOriginalPE = this._foundryCanvasEl.style.pointerEvents;
+            this._foundryCanvasEl.style.pointerEvents = "none";
+        }
+
         // Order matters for event dispatch — first marker whose onContextMenu returns true wins.
         // Path must come before Custom: CustomMarker's RMB falls through to a "create marker"
         // dialog on empty space, which would otherwise eat all right-clicks on paths.
@@ -27,6 +38,10 @@ export class MapMarkers {
     }
 
     destroy() {
+        if (this._foundryCanvasEl) {
+            this._foundryCanvasEl.style.pointerEvents = this._foundryCanvasOriginalPE ?? "";
+            this._foundryCanvasEl = null;
+        }
         for (const m of this.markers) m.destroy?.();
         this._clearFoundryHooks();
         this.map.remove();
