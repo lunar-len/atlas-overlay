@@ -1,5 +1,5 @@
 import { Marker } from "./marker.js";
-import { showContextMenu } from "../utils.js";
+import { showContextMenu, scaleFieldHtml, wireScaleSliders, percentToScale } from "../utils.js";
 
 const MODULE_ID = "atlas-overlay";
 const FLAG_KEY = "custom-markers";
@@ -56,11 +56,13 @@ export class CustomMarker extends Marker {
                     "icon-image": ["coalesce", ["get", "imageKey"], DEFAULT_ICON_KEY],
                     // Scale icons by zoom: small dot when globe is zoomed out, full size when zoomed in.
                     // Max image is 48px; multipliers below produce ~14px → ~38px on screen.
+                    // The per-marker manual scale is baked into the interpolation OUTPUTS —
+                    // MapLibre forbids ["zoom"] nested inside arithmetic like ["*", interp, …].
                     "icon-size": ["interpolate", ["linear"], ["zoom"],
-                        0, 0.3,
-                        3, 0.45,
-                        6, 0.65,
-                        9, 0.85
+                        0, ["*", 0.3, ["coalesce", ["get", "iconScale"], 1]],
+                        3, ["*", 0.45, ["coalesce", ["get", "iconScale"], 1]],
+                        6, ["*", 0.65, ["coalesce", ["get", "iconScale"], 1]],
+                        9, ["*", 0.85, ["coalesce", ["get", "iconScale"], 1]]
                     ],
                     "icon-allow-overlap": true,
                     "icon-ignore-placement": true,
@@ -82,10 +84,12 @@ export class CustomMarker extends Marker {
                 id: this.labelLayerID, type: "symbol", source: this.labelSourceID,
                 layout: {
                     "text-field": ["get", "label"],
+                    // Zoom-driven base size with the per-marker manual label scale baked
+                    // into the interpolation outputs (["zoom"] must stay top-level).
                     "text-size": ["interpolate", ["linear"], ["zoom"],
-                        0, 10,
-                        4, 12,
-                        8, 14
+                        0, ["*", 10, ["coalesce", ["get", "labelScale"], 1]],
+                        4, ["*", 12, ["coalesce", ["get", "labelScale"], 1]],
+                        8, ["*", 14, ["coalesce", ["get", "labelScale"], 1]]
                     ],
                     "text-anchor": "top",
                     "text-offset": [0, 0.8],
@@ -143,16 +147,21 @@ export class CustomMarker extends Marker {
     }
 
     _refreshFeatures() {
-        this.features = this.data.map(d => ({
-            type: "Feature",
-            geometry: { type: "Point", coordinates: [d.lng, d.lat] },
-            properties: {
-                id: d.id,
-                imageKey: this._iconKey(d.icon),
-                color: d.color ?? DEFAULT_COLOR,
-                haloColor: d.haloColor ?? DEFAULT_HALO_COLOR
-            }
-        }));
+        // Markers with `hideIcon: true` skip the icon source entirely — they
+        // render as labels only (text annotations on the map).
+        this.features = this.data
+            .filter(d => !d.hideIcon)
+            .map(d => ({
+                type: "Feature",
+                geometry: { type: "Point", coordinates: [d.lng, d.lat] },
+                properties: {
+                    id: d.id,
+                    imageKey: this._iconKey(d.icon),
+                    color: d.color ?? DEFAULT_COLOR,
+                    haloColor: d.haloColor ?? DEFAULT_HALO_COLOR,
+                    iconScale: d.iconScale ?? 1
+                }
+            }));
         this.source?.setData({ type: "FeatureCollection", features: this.features });
 
         this.labelFeatures = this.data
@@ -164,7 +173,8 @@ export class CustomMarker extends Marker {
                     id: d.id,
                     label: d.label,
                     textColor: d.textColor ?? DEFAULT_TEXT_COLOR,
-                    haloColor: d.haloColor ?? DEFAULT_HALO_COLOR
+                    haloColor: d.haloColor ?? DEFAULT_HALO_COLOR,
+                    labelScale: d.labelScale ?? 1
                 }
             }));
         this.labelSource?.setData({ type: "FeatureCollection", features: this.labelFeatures });
@@ -174,6 +184,17 @@ export class CustomMarker extends Marker {
     _iconKey(iconPath) {
         if (!iconPath) return null;
         return `custom-icon-${iconPath.replace(/[^a-zA-Z0-9]/g, "_")}`;
+    }
+
+    /**
+     * Resolve a FilePicker path to a loadable URL.
+     * External hosts (Forge `assets.forge-vtt.com`, S3 buckets, the Bazaar, …)
+     * come through as absolute or protocol-relative URLs and must be used as-is.
+     * Only plain relative paths are resolved against the local Foundry host.
+     */
+    _resolveIconUrl(iconPath) {
+        if (/^(https?:)?\/\//i.test(iconPath) || iconPath.startsWith("data:")) return iconPath;
+        return `${location.protocol}//${location.host}/${iconPath.replace(/^\//, "")}`;
     }
 
     async _loadIcon(iconPath) {
@@ -195,7 +216,7 @@ export class CustomMarker extends Marker {
      * Returns ImageData ready for map.addImage().
      */
     async _fetchToImageData(iconPath, maxSize) {
-        const url = `${location.protocol}//${location.host}/${iconPath.replace(/^\//, "")}`;
+        const url = this._resolveIconUrl(iconPath);
         const img = await new Promise((resolve, reject) => {
             const i = new Image();
             i.crossOrigin = "anonymous";
@@ -228,6 +249,7 @@ export class CustomMarker extends Marker {
                     label: game.i18n.localize("ATLAS.dialog.newMarker.create"),
                     callback: async (html) => {
                         const d = this._readForm(html);
+                        if (!(await this._confirmIfInvisible(d))) return;
                         d.id = crypto.randomUUID();
                         d.lng = lngLat.lng;
                         d.lat = lngLat.lat;
@@ -239,7 +261,7 @@ export class CustomMarker extends Marker {
                 }
             },
             default: "ok",
-            render: (html) => this._wireFilePicker(html)
+            render: (html) => this._wireDialog(html)
         }).render(true);
     }
 
@@ -259,6 +281,7 @@ export class CustomMarker extends Marker {
                     label: game.i18n.localize("ATLAS.dialog.editMarker.save"),
                     callback: async (html) => {
                         const updates = this._readForm(html);
+                        if (!(await this._confirmIfInvisible(updates))) return;
                         Object.assign(marker, updates);
                         await this._loadIcon(marker.icon);
                         this._refreshFeatures();
@@ -267,7 +290,7 @@ export class CustomMarker extends Marker {
                 }
             },
             default: "ok",
-            render: (html) => this._wireFilePicker(html)
+            render: (html) => this._wireDialog(html)
         }).render(true);
     }
 
@@ -374,8 +397,9 @@ export class CustomMarker extends Marker {
         }[c]));
     }
 
-    _wireFilePicker(html) {
+    _wireDialog(html) {
         const $html = html.jquery ? html : $(html);
+        wireScaleSliders($html);
         $html.find('[data-action="browse-icon"]').on("click", () => {
             const $input = $html.find('[name="icon"]');
             const FilePickerImpl = foundry.applications?.apps?.FilePicker?.implementation
@@ -397,6 +421,10 @@ export class CustomMarker extends Marker {
         const textColor = existing?.textColor ?? DEFAULT_TEXT_COLOR;
         const haloColor = existing?.haloColor ?? DEFAULT_HALO_COLOR;
         const showLabel = existing?.showLabel ?? true;
+        const hideIcon = existing?.hideIcon ?? false;
+        const locked = existing?.locked ?? false;
+        const iconScale = existing?.iconScale ?? 1;
+        const labelScale = existing?.labelScale ?? 1;
         const browseTitle = game.i18n.localize("ATLAS.dialog.newMarker.browseIcon");
         return `
             <form class="globe-dialog-form">
@@ -407,6 +435,14 @@ export class CustomMarker extends Marker {
                 <div class="form-group checkbox-row">
                     <input name="showLabel" type="checkbox" ${showLabel ? "checked" : ""} />
                     <label>${game.i18n.localize("ATLAS.dialog.newMarker.showLabel")}</label>
+                </div>
+                <div class="form-group checkbox-row">
+                    <input name="hideIcon" type="checkbox" ${hideIcon ? "checked" : ""} />
+                    <label>${game.i18n.localize("ATLAS.dialog.newMarker.hideIcon")}</label>
+                </div>
+                <div class="form-group checkbox-row">
+                    <input name="locked" type="checkbox" ${locked ? "checked" : ""} />
+                    <label>${game.i18n.localize("ATLAS.dialog.newMarker.locked")}</label>
                 </div>
                 <div class="form-group">
                     <label>${game.i18n.localize("ATLAS.dialog.newMarker.icon")}</label>
@@ -432,6 +468,8 @@ export class CustomMarker extends Marker {
                     </div>
                 </div>
                 <p class="globe-hint">${game.i18n.localize("ATLAS.dialog.newMarker.colorHint")}</p>
+                ${scaleFieldHtml({ labelText: game.i18n.localize("ATLAS.dialog.newMarker.iconScale"), name: "iconScale", value: iconScale })}
+                ${scaleFieldHtml({ labelText: game.i18n.localize("ATLAS.dialog.newMarker.labelScale"), name: "labelScale", value: labelScale })}
                 <div class="form-group">
                     <label>${game.i18n.localize("ATLAS.dialog.newMarker.journal")}</label>
                     <input name="journalId" type="text" value="${this._escapeAttr(journalId)}" placeholder="Journal Entry ID" />
@@ -454,8 +492,29 @@ export class CustomMarker extends Marker {
             textColor: html.find('[name="textColor"]').val() || DEFAULT_TEXT_COLOR,
             haloColor: html.find('[name="haloColor"]').val() || DEFAULT_HALO_COLOR,
             showLabel: html.find('[name="showLabel"]').prop("checked"),
+            hideIcon: html.find('[name="hideIcon"]').prop("checked"),
+            locked: html.find('[name="locked"]').prop("checked"),
+            iconScale: percentToScale(html.find('[name="iconScale"]').val()),
+            labelScale: percentToScale(html.find('[name="labelScale"]').val()),
             journalId: html.find('[name="journalId"]').val().trim() || null,
         };
+    }
+
+    /**
+     * If the user disabled both the label AND the icon, the marker becomes
+     * invisible on the map. Confirm before saving in that case.
+     * @returns {Promise<boolean>} true to proceed with save, false to abort
+     */
+    async _confirmIfInvisible(d) {
+        if (d.hideIcon && !d.showLabel) {
+            const ok = await Dialog.confirm({
+                title: game.i18n.localize("ATLAS.dialog.invisibleMarker.title"),
+                content: `<p>${game.i18n.localize("ATLAS.dialog.invisibleMarker.body")}</p>`,
+                defaultYes: false
+            });
+            return ok === true;
+        }
+        return true;
     }
 
     // ── Journal ───────────────────────────────────────────────────────
@@ -463,6 +522,18 @@ export class CustomMarker extends Marker {
         const journal = game.journal.get(journalId);
         if (journal) journal.sheet?.render(true);
         else ui.notifications.warn("Journal entry not found.");
+    }
+
+    // ── Live sync ─────────────────────────────────────────────────────
+    addFoundryHooks() {
+        // Custom markers live in scene flags. When the GM adds/edits/deletes one,
+        // setFlag fires `updateScene` on every client — reload so players (and the
+        // GM's other windows) see the change without re-entering the scene.
+        this.mapMarkers.addFoundryHook("updateScene", (scene, changes) => {
+            if (scene.id !== this.scene.id) return;
+            if (!foundry.utils.hasProperty(changes, `flags.${MODULE_ID}.${FLAG_KEY}`)) return;
+            this.loadFromScene();
+        });
     }
 
     // ── Event handlers ────────────────────────────────────────────────
@@ -494,6 +565,10 @@ export class CustomMarker extends Marker {
     onGrab(event, properties = {}) {
         const { id } = properties;
         if (!id || !game.user.isGM || this.dragging.id) return;
+        // Respect per-marker drag lock — RMB context menu / dblclick journal
+        // open still work; only LMB drag is suppressed.
+        const marker = this.data.find(d => d.id === id);
+        if (marker?.locked) return;
         this.dragging = { id, startPoint: event.point, active: false };
         this.map.dragPan.disable();
         this.map.getCanvas().style.cursor = "grabbing";

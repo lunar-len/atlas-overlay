@@ -1,5 +1,7 @@
 import { ItemMarker } from "./item.js";
 
+const MODULE_ID = "atlas-overlay";
+
 export class NoteMarker extends ItemMarker {
     get type() { return "note"; }
     get sceneItems() { return new Set(this.scene.notes.map(n => n.id)); }
@@ -18,7 +20,11 @@ export class NoteMarker extends ItemMarker {
             this.createMarker({ item: note, id: note.id });
         });
         this.mapMarkers.addFoundryHook("updateNote", (note, upd) => {
-            this.updateMarker({ item: note, id: note.id, updateImage: "texture" in upd });
+            this.updateMarker({
+                item: note, id: note.id,
+                updateImage: "texture" in upd,
+                updateScale: foundry.utils.hasProperty(upd, `flags.${MODULE_ID}`)
+            });
         });
         this.mapMarkers.addFoundryHook("refreshNote", (note) => {
             this.updateMarker({ item: note.document, id: note.document.id });

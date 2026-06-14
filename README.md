@@ -7,7 +7,7 @@ paths, and ping locations for the whole party to see.
 Ships with the Pathfinder Wiki Golarion tileset by default; any other PMTiles
 file can be configured per-world.
 
-> ⚠️ **Pre-release (v0.1.0).** Schema and behavior may change between versions.
+> ⚠️ **Pre-release (v0.2.0).** Schema and behavior may change between versions.
 > Custom scenes should be backed up before upgrading.
 
 ---
@@ -90,18 +90,34 @@ https://github.com/lunar-len/atlas-overlay/releases/latest/download/module.json
 | Right-click | Empty space (GM) | New marker dialog |
 | Right-click | On a custom marker (GM) | Edit / Delete / Open Journal |
 | Right-click | On a path (GM) | Edit Path / Delete |
+| Right-click | On a mirrored token / note (GM) | Adjust globe icon & label scale |
 | Double-click | Custom marker with Journal | Open the linked Journal Entry |
 | Left-click | On a mirrored scene note | Open the linked Journal Entry (if permitted) |
-| Left-click + drag | Custom marker (GM) | Move marker; release auto-saves |
+| Left-click + drag | Custom marker (GM) | Move marker; release auto-saves. Suppressed when the marker is locked. |
 | Escape / right-click | While drawing a path | Cancel without saving |
 | Double-click / Enter | While drawing a path | Finish and save the path |
 
 ### Marker editor
 
 - Label + show/hide label toggle
+- **Render label only (hide icon)** — turn a marker into a text-only annotation
+- **Lock position (prevent drag)** — guard against accidentally moving a placed marker
 - Icon (FilePicker; auto-resizes any image to 48 px maximum dimension)
 - Pin color, text color, outline/halo color
+- **Icon scale / Label scale** — manual size multipliers (0.1–5×)
 - Journal Entry ID (optional)
+
+> Saving a marker with both *Show label* off **and** *Render label only* on
+> will make it invisible on the map. A confirmation dialog warns you before
+> committing this combination.
+
+### Token & note markers
+
+Tokens and journal pins mirrored from the scene shrink as the globe zooms out
+so they don't clutter the map, capping at a fixed on-screen size when zoomed
+in. **Right-click a mirrored token or note (GM)** to adjust its icon and label
+scale individually; the values persist as document flags. Use *Reset* in that
+dialog to return to the defaults.
 
 ### Path editor
 

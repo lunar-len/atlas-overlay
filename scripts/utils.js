@@ -1,3 +1,72 @@
+// Manual scale is shown in the UI as an integer percent (1%–200%, default 100%)
+// but stored/used as a decimal multiplier (0.01–2.0, default 1.0) so the MapLibre
+// size expressions can multiply by it directly.
+export const SCALE_PCT_MIN = 1;
+export const SCALE_PCT_MAX = 200;
+export const SCALE_PCT_STEP = 1;
+export const SCALE_PCT_DEFAULT = 100;
+export const SCALE_DEFAULT = 1;
+
+/** Stored decimal multiplier → integer percent for display, clamped to [1, 200]. */
+export function scaleToPercent(scale) {
+    const n = Number.isFinite(scale) ? scale : SCALE_DEFAULT;
+    return Math.min(SCALE_PCT_MAX, Math.max(SCALE_PCT_MIN, Math.round(n * 100)));
+}
+
+/** Percent field value → stored decimal multiplier, clamped to [0.01, 2.0]. */
+export function percentToScale(pctValue) {
+    const pct = parseInt(pctValue, 10);
+    if (!Number.isFinite(pct)) return SCALE_DEFAULT;
+    return Math.min(SCALE_PCT_MAX, Math.max(SCALE_PCT_MIN, pct)) / 100;
+}
+
+/**
+ * HTML for a scale control: a label above a range slider paired with a number
+ * box (shown as integer percent) and a "%" suffix. The number box carries `name`
+ * so form-reading code can find it; the slider is linked by `data-scale`.
+ * `value` is the stored decimal multiplier. Call wireScaleSliders() after render.
+ */
+export function scaleFieldHtml({ labelText, name, value }) {
+    const pct = scaleToPercent(value);
+    return `
+        <div class="form-group scale-field">
+            <label>${labelText}</label>
+            <div class="scale-control">
+                <input type="range" data-scale="${name}" min="${SCALE_PCT_MIN}" max="${SCALE_PCT_MAX}" step="${SCALE_PCT_STEP}" value="${pct}" />
+                <input type="number" name="${name}" min="${SCALE_PCT_MIN}" max="${SCALE_PCT_MAX}" step="${SCALE_PCT_STEP}" value="${pct}" />
+                <span class="scale-suffix">%</span>
+            </div>
+        </div>
+    `;
+}
+
+/**
+ * Wire two-way sync between each range slider and its paired percent number box.
+ * Dragging the slider updates the number live; typing moves the slider live and
+ * is clamped to an integer in [1, 200] on blur.
+ * @param {JQuery|HTMLElement} html
+ */
+export function wireScaleSliders(html) {
+    const $html = html.jquery ? html : $(html);
+    const clampPct = (v) => Math.min(SCALE_PCT_MAX, Math.max(SCALE_PCT_MIN, Math.round(v)));
+    $html.find('input[type="range"][data-scale]').each((_, range) => {
+        const key = range.dataset.scale;
+        const $num = $html.find(`input[name="${key}"]`);
+        if (!$num.length) return;
+        $(range).on("input", () => { $num.val(range.value); });
+        $num.on("input", () => {
+            const n = parseInt($num.val(), 10);
+            if (Number.isFinite(n)) range.value = clampPct(n);
+        });
+        $num.on("change", () => {
+            const n = parseInt($num.val(), 10);
+            const pct = Number.isFinite(n) ? clampPct(n) : SCALE_PCT_DEFAULT;
+            $num.val(pct);
+            range.value = pct;
+        });
+    });
+}
+
 /**
  * Display a floating context menu at the given native mouse event position.
  * Each item: { label: string, action: () => void, danger?: boolean }
