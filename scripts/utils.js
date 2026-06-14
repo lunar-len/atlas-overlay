@@ -21,6 +21,17 @@ export function percentToScale(pctValue) {
 }
 
 /**
+ * Clamp a stored decimal multiplier into the valid [0.01, 2.0] range at read
+ * time. Guards against legacy data saved under earlier, wider bounds (which
+ * would otherwise feed an oversized multiplier straight into MapLibre and blow
+ * the icon up until the item is re-saved). Missing/invalid → default 1.0.
+ */
+export function clampScaleValue(scale) {
+    const n = Number.isFinite(scale) ? scale : SCALE_DEFAULT;
+    return Math.min(SCALE_PCT_MAX / 100, Math.max(SCALE_PCT_MIN / 100, n));
+}
+
+/**
  * HTML for a scale control: a label above a range slider paired with a number
  * box (shown as integer percent) and a "%" suffix. The number box carries `name`
  * so form-reading code can find it; the slider is linked by `data-scale`.

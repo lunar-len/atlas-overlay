@@ -1,5 +1,5 @@
 import { Marker } from "./marker.js";
-import { showContextMenu, scaleFieldHtml, wireScaleSliders, percentToScale } from "../utils.js";
+import { showContextMenu, scaleFieldHtml, wireScaleSliders, percentToScale, clampScaleValue } from "../utils.js";
 
 const MODULE_ID = "atlas-overlay";
 const FLAG_KEY = "custom-markers";
@@ -159,7 +159,7 @@ export class CustomMarker extends Marker {
                     imageKey: this._iconKey(d.icon),
                     color: d.color ?? DEFAULT_COLOR,
                     haloColor: d.haloColor ?? DEFAULT_HALO_COLOR,
-                    iconScale: d.iconScale ?? 1
+                    iconScale: clampScaleValue(d.iconScale)
                 }
             }));
         this.source?.setData({ type: "FeatureCollection", features: this.features });
@@ -174,7 +174,7 @@ export class CustomMarker extends Marker {
                     label: d.label,
                     textColor: d.textColor ?? DEFAULT_TEXT_COLOR,
                     haloColor: d.haloColor ?? DEFAULT_HALO_COLOR,
-                    labelScale: d.labelScale ?? 1
+                    labelScale: clampScaleValue(d.labelScale)
                 }
             }));
         this.labelSource?.setData({ type: "FeatureCollection", features: this.labelFeatures });

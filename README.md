@@ -104,7 +104,7 @@ https://github.com/lunar-len/atlas-overlay/releases/latest/download/module.json
 - **Lock position (prevent drag)** — guard against accidentally moving a placed marker
 - Icon (FilePicker; auto-resizes any image to 48 px maximum dimension)
 - Pin color, text color, outline/halo color
-- **Icon scale / Label scale** — manual size multipliers (0.1–5×)
+- **Icon scale / Label scale** — manual size, 1%–200% (default 100%)
 - Journal Entry ID (optional)
 
 > Saving a marker with both *Show label* off **and** *Render label only* on

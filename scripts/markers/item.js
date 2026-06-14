@@ -1,5 +1,5 @@
 import { Marker } from "./marker.js";
-import { showContextMenu, scaleFieldHtml, wireScaleSliders, percentToScale } from "../utils.js";
+import { showContextMenu, scaleFieldHtml, wireScaleSliders, percentToScale, clampScaleValue } from "../utils.js";
 
 const MODULE_ID = "atlas-overlay";
 
@@ -243,8 +243,8 @@ export class ItemMarker extends Marker {
     getName(_id) { return null; }
     getScalable(_id) { throw new Error(`${this.constructor.name}.getScalable() must be implemented`); }
     /** Per-item manual scale multipliers stored as Atlas Overlay document flags. */
-    getIconScale(id) { return this.getItem(id)?.getFlag?.(MODULE_ID, "iconScale") ?? 1; }
-    getLabelScale(id) { return this.getItem(id)?.getFlag?.(MODULE_ID, "labelScale") ?? 1; }
+    getIconScale(id) { return clampScaleValue(this.getItem(id)?.getFlag?.(MODULE_ID, "iconScale")); }
+    getLabelScale(id) { return clampScaleValue(this.getItem(id)?.getFlag?.(MODULE_ID, "labelScale")); }
     _itemVisible(data) {
         const item = data.item ?? this.getItem(data.id);
         return item && (!item.hidden || game.user.isGM);
