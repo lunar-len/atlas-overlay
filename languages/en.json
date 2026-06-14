@@ -23,14 +23,23 @@
     "ATLAS.dialog.newMarker.journal": "Journal Entry ID (optional)",
     "ATLAS.dialog.newMarker.create": "Create",
     "ATLAS.dialog.newMarker.showLabel": "Show label on map",
+    "ATLAS.dialog.newMarker.hideIcon": "Render label only (hide icon)",
+    "ATLAS.dialog.newMarker.locked": "Lock position (prevent drag)",
     "ATLAS.dialog.newMarker.color": "Pin color",
     "ATLAS.dialog.newMarker.textColor": "Text color",
     "ATLAS.dialog.newMarker.haloColor": "Outline / halo",
     "ATLAS.dialog.newMarker.colorHint": "Pin color and outline apply to the default circle only — custom uploaded images render with their original colors.",
     "ATLAS.dialog.newMarker.browseIcon": "Browse for icon image",
+    "ATLAS.dialog.newMarker.iconScale": "Icon scale",
+    "ATLAS.dialog.newMarker.labelScale": "Label scale",
 
     "ATLAS.dialog.editMarker.title": "Edit Globe Marker",
     "ATLAS.dialog.editMarker.save": "Save",
+
+    "ATLAS.dialog.scale.title": "Globe Marker Scale",
+    "ATLAS.dialog.scale.iconScale": "Icon scale",
+    "ATLAS.dialog.scale.labelScale": "Label scale",
+    "ATLAS.dialog.scale.reset": "Reset",
 
     "ATLAS.dialog.editPath.title": "Edit Path",
     "ATLAS.dialog.editPath.label": "Path Label (optional)",
@@ -47,12 +56,16 @@
     "ATLAS.contextMenu.edit": "Edit",
     "ATLAS.contextMenu.delete": "Delete",
     "ATLAS.contextMenu.editPath": "Edit Path",
+    "ATLAS.contextMenu.adjustScale": "Adjust globe scale…",
 
     "ATLAS.notification.drawPathActive": "Globe path drawing active — click to place waypoints, double-click or Enter to finish, Escape or right-click to cancel.",
     "ATLAS.notification.pingHint": "Long-press the globe to ping. Hold Alt for an alert ping, Shift to pull the camera.",
 
     "ATLAS.dialog.confirmDelete.title": "Confirm Delete",
     "ATLAS.dialog.confirmDelete.body": "Delete <strong>{name}</strong>? This cannot be undone.",
+
+    "ATLAS.dialog.invisibleMarker.title": "Invisible Marker",
+    "ATLAS.dialog.invisibleMarker.body": "This marker has both its icon and its label hidden — it will be invisible on the map. Save anyway?",
 
     "ATLAS.manager.markersTitle": "Globe Markers",
     "ATLAS.manager.pathsTitle": "Globe Paths",

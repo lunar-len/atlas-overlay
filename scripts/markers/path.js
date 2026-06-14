@@ -121,6 +121,19 @@ export class PathMarker extends Marker {
         });
     }
 
+    // ── Live sync ─────────────────────────────────────────────────────
+    addFoundryHooks() {
+        // Paths live in scene flags. When the GM finalizes/edits/deletes a path,
+        // setFlag fires `updateScene` on every client — reload so players see it
+        // without re-entering the scene. Skip while this client is mid-draw.
+        this.mapMarkers.addFoundryHook("updateScene", (scene, changes) => {
+            if (scene.id !== this.scene.id) return;
+            if (!foundry.utils.hasProperty(changes, `flags.${MODULE_ID}.${FLAG_KEY}`)) return;
+            if (this.isDrawingMode) return;
+            this.loadFromScene();
+        });
+    }
+
     // ── Draw mode ─────────────────────────────────────────────────────
     toggleDrawMode() {
         if (!game.user.isGM) return;

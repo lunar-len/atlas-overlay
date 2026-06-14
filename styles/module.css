@@ -211,6 +211,28 @@
     opacity: 0.7;
 }
 
+/* ── Scale field (slider + synced number box) ─────────────────────── */
+.globe-dialog-form .scale-control {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.globe-dialog-form .scale-control input[type="range"] {
+    flex: 1 1 auto;
+    min-width: 0;
+    cursor: pointer;
+}
+.globe-dialog-form .scale-control input[type="number"] {
+    flex: 0 0 auto;
+    width: 56px;
+    text-align: right;
+}
+.globe-dialog-form .scale-control .scale-suffix {
+    flex: 0 0 auto;
+    opacity: 0.7;
+    font-size: 12px;
+}
+
 /* ── Manager dialog (list of markers / paths) ─────────────────────── */
 .globe-manager {
     max-height: 60vh;

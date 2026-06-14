@@ -1,4 +1,7 @@
 import { Marker } from "./marker.js";
+import { showContextMenu, scaleFieldHtml, wireScaleSliders, percentToScale, clampScaleValue } from "../utils.js";
+
+const MODULE_ID = "atlas-overlay";
 
 /**
  * Base class for Foundry document markers (tokens, notes).
@@ -64,14 +67,14 @@ export class ItemMarker extends Marker {
         if (!this.source) this.map.addSource(this.sourceID, { type: "geojson", data: { type: "FeatureCollection", features: [] } });
         if (!this.layer) this.map.addLayer({
             id: this.layerID, type: "symbol", source: this.sourceID,
-            layout: { "icon-image": ["get", "imageID"], "icon-size": 0.25, "icon-allow-overlap": true }
+            layout: { "icon-image": ["get", "imageID"], "icon-size": this._zoomScaledSize(0.25), "icon-allow-overlap": true }
         });
         if (!this.scalableSource) this.map.addSource(this.scalableSourceID, { type: "geojson", data: { type: "FeatureCollection", features: [] } });
         if (!this.scalableLayer) this.map.addLayer({
             id: this.scalableLayerID, type: "symbol", source: this.scalableSourceID,
             layout: {
                 "icon-image": ["get", "imageID"],
-                "icon-size": this._worldRelativeSize(20, 400),
+                "icon-size": this._zoomScaledSize(0.25),
                 "icon-allow-overlap": true, "icon-ignore-placement": true
             }
         });
@@ -79,7 +82,8 @@ export class ItemMarker extends Marker {
         if (!this.labelLayer) this.map.addLayer({
             id: this.labelLayerID, type: "symbol", source: this.labelSourceID,
             layout: {
-                "text-field": ["get", "label"], "text-size": 24,
+                "text-field": ["get", "label"],
+                "text-size": this._zoomScaledSize(24),
                 "text-anchor": "top", "text-offset": [0, 1],
                 "text-font": ["NotoSans-Medium"],
                 "text-allow-overlap": true, "text-ignore-placement": true
@@ -91,13 +95,31 @@ export class ItemMarker extends Marker {
             id: this.scalableLabelLayerID, type: "symbol", source: this.scalableLabelSourceID,
             layout: {
                 "text-field": ["get", "label"],
-                "text-size": ["interpolate", ["exponential", 2], ["zoom"], 0, 20000 * Math.pow(2, -20), 20, 20000],
+                "text-size": this._zoomScaledSize(24),
                 "text-anchor": "top", "text-offset": [0, 1],
                 "text-font": ["NotoSans-Medium"],
                 "text-allow-overlap": true, "text-ignore-placement": true
             },
             paint: { "text-color": "#ffffff", "text-halo-color": "#000000", "text-halo-width": 1 }
         });
+    }
+
+    /**
+     * Linear zoom-driven size (small when zoomed out, capped at `maxSize` when
+     * zoomed in) with the per-feature manual scale baked into each output stop.
+     *
+     * MapLibre requires `["zoom"]` to be the direct input of a top-level
+     * interpolate/step — it cannot be nested inside arithmetic. So the manual
+     * scale multiplier is applied to the interpolation OUTPUTS rather than
+     * wrapping the whole expression in `["*", …]` (which silently invalidates
+     * the layer and makes the icon/label disappear).
+     */
+    _zoomScaledSize(maxSize) {
+        const scale = ["coalesce", ["get", "scale"], 1];
+        return ["interpolate", ["linear"], ["zoom"],
+            0, ["*", maxSize * 0.3, scale],
+            6, ["*", maxSize * 0.7, scale],
+            9, ["*", maxSize, scale]];
     }
 
     _deleteSourceLayers() {
@@ -137,14 +159,14 @@ export class ItemMarker extends Marker {
         const scalable = this.getScalable(id);
         const features = scalable ? this.scalableFeatures : this.features;
         const source = scalable ? this.scalableSource : this.source;
-        features.push({ type: "Feature", geometry: { type: "Point", coordinates: [lng, lat] }, properties: { id, imageID } });
+        features.push({ type: "Feature", geometry: { type: "Point", coordinates: [lng, lat] }, properties: { id, imageID, scale: this.getIconScale(id) } });
         source?.setData({ type: "FeatureCollection", features });
 
         const label = this.getName(id);
         if (label) {
             const labels = scalable ? this.scalableLabels : this.labels;
             const labelSource = scalable ? this.scalableLabelSource : this.labelSource;
-            labels.push({ type: "Feature", geometry: { type: "Point", coordinates: [lng, lat] }, properties: { id, label } });
+            labels.push({ type: "Feature", geometry: { type: "Point", coordinates: [lng, lat] }, properties: { id, label, scale: this.getLabelScale(id) } });
             labelSource?.setData({ type: "FeatureCollection", features: labels });
         }
     }
@@ -158,7 +180,9 @@ export class ItemMarker extends Marker {
         }
         const f1 = this.features.find(f => f.properties.id === id);
         const f2 = this.scalableFeatures.find(f => f.properties.id === id);
-        if (!!f1 === !!f2 || (data.updateScalable && ((this.getScalable(id) && f1) || (!this.getScalable(id) && f2)))) {
+        // Recreate (rather than just move) when the feature must move between the
+        // fixed/scalable source, or when the manual scale changed (rebuilds props).
+        if (data.updateScale || !!f1 === !!f2 || (data.updateScalable && ((this.getScalable(id) && f1) || (!this.getScalable(id) && f2)))) {
             this._deleteFeature(data);
             this._createFeature(data);
             return;
@@ -218,6 +242,9 @@ export class ItemMarker extends Marker {
     getSize(_id) { return 1; }
     getName(_id) { return null; }
     getScalable(_id) { throw new Error(`${this.constructor.name}.getScalable() must be implemented`); }
+    /** Per-item manual scale multipliers stored as Atlas Overlay document flags. */
+    getIconScale(id) { return clampScaleValue(this.getItem(id)?.getFlag?.(MODULE_ID, "iconScale")); }
+    getLabelScale(id) { return clampScaleValue(this.getItem(id)?.getFlag?.(MODULE_ID, "labelScale")); }
     _itemVisible(data) {
         const item = data.item ?? this.getItem(data.id);
         return item && (!item.hidden || game.user.isGM);
@@ -225,11 +252,6 @@ export class ItemMarker extends Marker {
     _hasPermission(data, permission = "OWNER") {
         const item = data.item ?? this.getItem(data.id);
         return item?.testUserPermission(game.user, permission);
-    }
-    _worldRelativeSize(targetZoom = 10, baseSize = 1.0) {
-        return ["interpolate", ["exponential", 2], ["zoom"],
-            0, baseSize * Math.pow(2, 0 - targetZoom),
-            20, baseSize * Math.pow(2, 20 - targetZoom)];
     }
     async _normalizeImage(image, size = 64) {
         if (image.data.width === size && image.data.height === size) return image.data;
@@ -298,5 +320,60 @@ export class ItemMarker extends Marker {
         this.dragging = { id: null, point: null, active: false };
         this.map.dragPan.enable();
         this.map.getCanvas().style.cursor = "";
+    }
+
+    // Custom markers and paths are added to the map after token/note layers, so
+    // they render ABOVE them. The event dispatch visits token/note markers first,
+    // so when an editable marker/path overlaps a token we must yield to it —
+    // otherwise a GM right-clicking the visibly-top marker only gets the scale
+    // dialog and can't reach edit/delete. These are the higher-z layers to defer to.
+    static OVERLAY_LAYER_IDS = ["custom-layer", "custom-label-layer", "path-layer", "path-hit-layer"];
+
+    onContextMenu(event, features) {
+        if (!game.user.isGM) return false;
+        const id = this.layerIDs.flatMap(lid => features[lid] ?? [])[0]?.properties?.id;
+        if (!id) return false;
+        // Defer to a custom marker / path rendered above this token or note.
+        if (ItemMarker.OVERLAY_LAYER_IDS.some(lid => (features[lid] ?? []).length)) return false;
+        showContextMenu(event.originalEvent, [
+            { label: game.i18n.localize("ATLAS.contextMenu.adjustScale"), action: () => this.showScaleDialog(id) }
+        ]);
+        return true;
+    }
+
+    showScaleDialog(id) {
+        const item = this.getItem(id);
+        if (!item) return;
+        const iconScale = item.getFlag(MODULE_ID, "iconScale") ?? 1;
+        const labelScale = item.getFlag(MODULE_ID, "labelScale") ?? 1;
+        const content = `
+            <form class="globe-dialog-form">
+                ${scaleFieldHtml({ labelText: game.i18n.localize("ATLAS.dialog.scale.iconScale"), name: "iconScale", value: iconScale })}
+                ${scaleFieldHtml({ labelText: game.i18n.localize("ATLAS.dialog.scale.labelScale"), name: "labelScale", value: labelScale })}
+            </form>
+        `;
+        new Dialog({
+            title: game.i18n.localize("ATLAS.dialog.scale.title"),
+            content,
+            buttons: {
+                reset: {
+                    label: game.i18n.localize("ATLAS.dialog.scale.reset"),
+                    callback: async () => {
+                        await item.unsetFlag(MODULE_ID, "iconScale");
+                        await item.unsetFlag(MODULE_ID, "labelScale");
+                    }
+                },
+                cancel: { label: game.i18n.localize("ATLAS.dialog.editPath.cancel") },
+                ok: {
+                    label: game.i18n.localize("ATLAS.dialog.editPath.save"),
+                    callback: async (html) => {
+                        await item.setFlag(MODULE_ID, "iconScale", percentToScale(html.find('[name="iconScale"]').val()));
+                        await item.setFlag(MODULE_ID, "labelScale", percentToScale(html.find('[name="labelScale"]').val()));
+                    }
+                }
+            },
+            default: "ok",
+            render: (html) => wireScaleSliders(html)
+        }).render(true);
     }
 }

@@ -3,7 +3,7 @@
     "title": "Atlas Overlay",
     "type": "module",
     "description": "An interactive 3D globe / 2D map overlay for Foundry VTT scenes. Place persistent markers and draw measured paths on top of a vector map, with ping-to-attention, custom marker images, and per-scene enablement. Ships with the Pathfinder Wiki Golarion tileset; arbitrary PMTiles URLs can be configured.",
-    "version": "0.1.2",
+    "version": "0.2.0",
     "compatibility": {
         "minimum": "13",
         "verified": "14",

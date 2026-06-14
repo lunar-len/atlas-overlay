@@ -1,5 +1,7 @@
 import { ItemMarker } from "./item.js";
 
+const MODULE_ID = "atlas-overlay";
+
 export class TokenMarker extends ItemMarker {
     get type() { return "token"; }
     get sceneItems() { return new Set(this.scene.tokens.map(t => t.id)); }
@@ -14,7 +16,12 @@ export class TokenMarker extends ItemMarker {
             this.createMarker({ item: token, id: token.id });
         });
         this.mapMarkers.addFoundryHook("updateToken", (token, upd) => {
-            this.updateMarker({ item: token, id: token.id, updateImage: "texture" in upd || "width" in upd, updateScalable: "altitude" in upd });
+            this.updateMarker({
+                item: token, id: token.id,
+                updateImage: "texture" in upd || "width" in upd,
+                updateScalable: "altitude" in upd,
+                updateScale: foundry.utils.hasProperty(upd, `flags.${MODULE_ID}`)
+            });
         });
         this.mapMarkers.addFoundryHook("refreshToken", (token) => {
             this.updateMarker({ item: token.document, id: token.document.id });
