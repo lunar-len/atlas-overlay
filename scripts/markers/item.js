@@ -322,10 +322,19 @@ export class ItemMarker extends Marker {
         this.map.getCanvas().style.cursor = "";
     }
 
+    // Custom markers and paths are added to the map after token/note layers, so
+    // they render ABOVE them. The event dispatch visits token/note markers first,
+    // so when an editable marker/path overlaps a token we must yield to it —
+    // otherwise a GM right-clicking the visibly-top marker only gets the scale
+    // dialog and can't reach edit/delete. These are the higher-z layers to defer to.
+    static OVERLAY_LAYER_IDS = ["custom-layer", "custom-label-layer", "path-layer", "path-hit-layer"];
+
     onContextMenu(event, features) {
         if (!game.user.isGM) return false;
         const id = this.layerIDs.flatMap(lid => features[lid] ?? [])[0]?.properties?.id;
         if (!id) return false;
+        // Defer to a custom marker / path rendered above this token or note.
+        if (ItemMarker.OVERLAY_LAYER_IDS.some(lid => (features[lid] ?? []).length)) return false;
         showContextMenu(event.originalEvent, [
             { label: game.i18n.localize("ATLAS.contextMenu.adjustScale"), action: () => this.showScaleDialog(id) }
         ]);
