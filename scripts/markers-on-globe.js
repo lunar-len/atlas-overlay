@@ -135,21 +135,29 @@ export class MapMarkers {
         // MapLibre fires mousemove very frequently; coalesce to one feature query
         // per animation frame so hover/drag stay smooth without querying every move.
         this._pendingMove = event;
-        if (this._moveRAF != null) return;
-        this._moveRAF = requestAnimationFrame(() => {
-            this._moveRAF = null;
-            const e = this._pendingMove;
-            this._pendingMove = null;
-            if (!e || !this.map) return;
-            const grouped = this._featuresAt(e.point);
-            for (const m of this.markers) {
-                const feats = this._collectFor(m, grouped);
-                m.onMouseMove?.(e, feats);
-            }
-        });
+        if (this._moveRAF == null) this._moveRAF = requestAnimationFrame(() => this._flushMove());
+    }
+
+    /**
+     * Process the latest pending mousemove immediately, cancelling the scheduled
+     * frame. Called synchronously before mousedown/mouseup so a drag's final
+     * position is applied (and its threshold flag set) before onGrab/onRelease —
+     * otherwise a quick drag could release with stale or unset drag state.
+     */
+    _flushMove() {
+        if (this._moveRAF != null) { cancelAnimationFrame(this._moveRAF); this._moveRAF = null; }
+        const event = this._pendingMove;
+        this._pendingMove = null;
+        if (!event || !this.map) return;
+        const grouped = this._featuresAt(event.point);
+        for (const m of this.markers) {
+            const feats = this._collectFor(m, grouped);
+            m.onMouseMove?.(event, feats);
+        }
     }
 
     _onMouseDown(event) {
+        this._flushMove();
         const grouped = this._featuresAt(event.point);
         for (const m of this.markers) {
             const feats = this._collectFor(m, grouped);
@@ -159,6 +167,7 @@ export class MapMarkers {
     }
 
     _onMouseUp(event) {
+        this._flushMove();
         const grouped = this._featuresAt(event.point);
         for (const m of this.markers) {
             const feats = this._collectFor(m, grouped);
