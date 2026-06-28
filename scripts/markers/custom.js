@@ -43,7 +43,10 @@ export class CustomMarker extends Marker {
     get labelSource() { return this.map?.getSource(this.labelSourceID); }
     get labelLayerID() { return "custom-label-layer"; }
     get labelLayer() { return this.map?.getLayer(this.labelLayerID); }
-    get layerIDs() { return [this.iconSdfLayerID, this.iconImgLayerID, this.labelLayerID]; }
+    // Topmost-rendered first, so hit-testing (`_collectFor` → onGrab/onContextMenu)
+    // picks the marker the user actually sees on top: the raster image layer is
+    // added after — and so renders above — the SDF default-circle layer.
+    get layerIDs() { return [this.iconImgLayerID, this.iconSdfLayerID, this.labelLayerID]; }
     get sourceIDs() { return [this.sourceID, this.labelSourceID]; }
 
     // Zoom-driven icon size with the per-marker manual scale baked into the
