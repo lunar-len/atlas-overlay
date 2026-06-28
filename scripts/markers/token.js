@@ -1,7 +1,6 @@
 import { ItemMarker } from "./item.js";
 
-const MODULE_ID = "atlas-overlay";
-
+import { MODULE_ID } from "../constants.js";
 export class TokenMarker extends ItemMarker {
     get type() { return "token"; }
     get sceneItems() { return new Set(this.scene.tokens.map(t => t.id)); }

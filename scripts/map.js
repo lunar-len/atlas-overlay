@@ -1,8 +1,7 @@
 import layers from "../lib/pathfinder-wiki-maps/src/layers.js";
 import * as pmtiles from "../lib/pmtiles/pmtiles-bundle.js";
 
-const MODULE_ID = "atlas-overlay";
-
+import { MODULE_ID } from "./constants.js";
 // The pmtiles protocol is global to MapLibre; register it once and reuse the
 // Protocol instance (it also caches opened archives) across scene reloads.
 let pmtilesProtocol = null;

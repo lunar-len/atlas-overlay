@@ -1,7 +1,6 @@
 import { Marker } from "./marker.js";
 
-const MODULE_ID = "atlas-overlay";
-
+import { MODULE_ID } from "../constants.js";
 export class PingMarker extends Marker {
     reset() {
         this._timeout = null;
@@ -65,8 +64,7 @@ export class PingMarker extends Marker {
         // Don't ping while drawing a path
         if (this.mapMarkers.isPathDrawing) return;
         // Don't ping when long-pressing on a marker — that's drag/dblclick territory
-        const grouped = this.mapMarkers._featuresAt({ x: e.offsetX, y: e.offsetY });
-        if ((grouped["custom-layer"]?.length || grouped["custom-label-layer"]?.length)) return;
+        if (this.mapMarkers.isOverCustomMarker({ x: e.offsetX, y: e.offsetY })) return;
 
         this._pressed = true;
         this._moved = false;

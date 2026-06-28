@@ -85,6 +85,11 @@ export function escapeHtml(s) {
     }[c]));
 }
 
+/** Return a CSS-safe hex color (#rgb … #rrggbbaa), or `fallback` for invalid input. */
+export function safeColor(c, fallback = "#000000") {
+    return /^#[0-9a-fA-F]{3,8}$/.test(c ?? "") ? c : fallback;
+}
+
 /**
  * Confirmation dialog for a destructive action, defaulting to "no".
  * @param {string} name  Human-readable name of the thing being deleted.
