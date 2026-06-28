@@ -3,10 +3,16 @@ import * as pmtiles from "../lib/pmtiles/pmtiles-bundle.js";
 
 const MODULE_ID = "atlas-overlay";
 
+// The pmtiles protocol is global to MapLibre; register it once and reuse the
+// Protocol instance (it also caches opened archives) across scene reloads.
+let pmtilesProtocol = null;
+
 export function createMap() {
     const root = `${location.protocol}//${location.host}/`;
-    const prot = new pmtiles.Protocol();
-    maplibregl.addProtocol("pmtiles", prot.tilev4);
+    if (!pmtilesProtocol) {
+        pmtilesProtocol = new pmtiles.Protocol();
+        maplibregl.addProtocol("pmtiles", pmtilesProtocol.tilev4);
+    }
 
     const tilesUrl = game.settings.get(MODULE_ID, "mapTilesUrl");
 
@@ -45,6 +51,28 @@ export function createMap() {
     map.on("style.load", () => {
         map.setProjection({ type: projection });
         Hooks.call(`${MODULE_ID}.style.load`, map);
+    });
+
+    // Surface tile/source failures (incompatible, missing, or unreachable PMTiles
+    // source) to the user once, instead of leaving a silent blank globe.
+    let mapErrorNotified = false;
+    map.on("error", (e) => {
+        const err = e?.error ?? e;
+        const msg = err?.message ?? "";
+        console.warn(`[${MODULE_ID}] MapLibre error:`, err);
+        if (mapErrorNotified) return;
+        // Treat as a load failure if it's tied to a source/tile, carries an HTTP
+        // status (e.g. AJAXError 404/403), or its message looks transport- or
+        // parse-related. The keyword list also covers PMTiles' "Bad response
+        // code: 404" and "Expected varint…" decode errors.
+        const isLoadFailure =
+            e?.sourceId != null ||
+            Number.isInteger(err?.status) ||
+            /tile|pmtiles|source|parse|response|fetch|network|load|varint|decode/i.test(msg);
+        if (isLoadFailure) {
+            mapErrorNotified = true;
+            ui.notifications?.warn(game.i18n.localize("ATLAS.notification.mapLoadError"));
+        }
     });
 
     map.keyboard.disable();

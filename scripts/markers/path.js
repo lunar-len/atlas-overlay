@@ -1,5 +1,5 @@
 import { Marker } from "./marker.js";
-import { showContextMenu } from "../utils.js";
+import { showContextMenu, escapeHtml, confirmDelete } from "../utils.js";
 import * as turf from "../../lib/turf/turf-bundle.js";
 
 const MODULE_ID = "atlas-overlay";
@@ -315,7 +315,7 @@ export class PathMarker extends Marker {
         const haloColor = path.haloColor ?? DEFAULT_HALO_COLOR;
         const showDistance = path.showDistance ?? true;
         const showLabel = path.showLabel ?? true;
-        const safeLabel = this._escapeHtml(label);
+        const safeLabel = escapeHtml(label);
         return `
             <form class="globe-dialog-form">
                 <div class="form-group">
@@ -352,21 +352,13 @@ export class PathMarker extends Marker {
         const path = this.paths.find(p => p.id === id);
         if (!path) return false;
         if (confirm) {
-            const ok = await this._confirmDelete(path.label || game.i18n.localize("ATLAS.manager.unnamedPath"));
+            const ok = await confirmDelete(path.label || game.i18n.localize("ATLAS.manager.unnamedPath"));
             if (!ok) return false;
         }
         this.paths = this.paths.filter(p => p.id !== id);
         this._refreshPaths();
         await this._saveToScene();
         return true;
-    }
-
-    async _confirmDelete(name) {
-        return Dialog.confirm({
-            title: game.i18n.localize("ATLAS.dialog.confirmDelete.title"),
-            content: `<p>${game.i18n.format("ATLAS.dialog.confirmDelete.body", { name })}</p>`,
-            defaultYes: false
-        });
     }
 
     // ── Manager dialog ────────────────────────────────────────────────
@@ -400,7 +392,7 @@ export class PathMarker extends Marker {
 
     _renderManagerRow(p) {
         const name = p.label
-            ? this._escapeHtml(p.label)
+            ? escapeHtml(p.label)
             : `<i style="color:#888">${game.i18n.localize("ATLAS.manager.unnamedPath")}</i>`;
         const swatch = `<span class="globe-color-swatch" style="background:${p.color ?? DEFAULT_COLOR}"></span>`;
         const dist = this._formatDistance(p.totalDistance);
@@ -445,12 +437,6 @@ export class PathMarker extends Marker {
                 }
             }
         });
-    }
-
-    _escapeHtml(s) {
-        return String(s).replace(/[&<>"']/g, c => ({
-            "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
-        }[c]));
     }
 
     // ── Event handlers ────────────────────────────────────────────────

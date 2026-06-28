@@ -171,8 +171,12 @@ Hooks.on("canvasReady", (canvas) => {
 });
 
 Hooks.on("renderSceneConfig", (app, html) => {
+    const $html = $(html);
+    // ApplicationV2 sheets re-render on form changes — guard against appending
+    // the checkbox more than once.
+    if ($html.find(`input[name="flags.${MODULE_ID}.enabled"]`).length) return;
     const current = foundry.utils.getProperty(app.document, `flags.${MODULE_ID}.enabled`);
-    $(html).find("div[data-tab='basics']").append(`
+    $html.find("div[data-tab='basics']").append(`
         <div class="form-group">
             <label>${game.i18n.localize("ATLAS.scene.enableGlobe")}</label>
             <input type="checkbox" name="flags.${MODULE_ID}.enabled" ${current ? "checked" : ""} />
