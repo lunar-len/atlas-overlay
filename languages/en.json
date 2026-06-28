@@ -2,6 +2,7 @@
     "ATLAS.settings.mapTilesUrl.name": "Map Tiles File",
     "ATLAS.settings.mapTilesUrl.hint": "Path to the PMTiles file (or pmtiles:// URL) for the globe map. Use the browse button to pick a file from your Foundry Data folder. Reload the page after changing.",
     "ATLAS.settings.mapTilesUrl.browse": "Browse for PMTiles file",
+    "ATLAS.settings.mapTilesUrl.reload": "Reload the page to apply the new map URL.",
     "ATLAS.settings.pathStyle.name": "Path Line Style",
     "ATLAS.settings.pathStyle.hint": "Visual style of drawn paths on the globe.",
     "ATLAS.settings.pathStyle.solid": "Solid",

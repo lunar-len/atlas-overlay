@@ -1,7 +1,6 @@
 import { Marker } from "./marker.js";
-import { showContextMenu, scaleFieldHtml, wireScaleSliders, percentToScale, clampScaleValue, escapeHtml, confirmDelete } from "../utils.js";
-
-const MODULE_ID = "atlas-overlay";
+import { showContextMenu, scaleFieldHtml, wireScaleSliders, percentToScale, clampScaleValue, escapeHtml, confirmDelete, safeColor } from "../utils.js";
+import { MODULE_ID } from "../constants.js";
 const FLAG_KEY = "custom-markers";
 const DEFAULT_ICON_KEY = "custom-default-circle";
 const DEFAULT_COLOR = "#e0b040";
@@ -342,7 +341,7 @@ export class CustomMarker extends Marker {
         const coords = `${d.lat.toFixed(1)}°, ${d.lng.toFixed(1)}°`;
         const swatch = d.icon
             ? `<i class="fa-solid fa-image" style="color:#aaa;width:14px;"></i>`
-            : `<span class="globe-color-swatch" style="background:${d.color ?? DEFAULT_COLOR}"></span>`;
+            : `<span class="globe-color-swatch" style="background:${safeColor(d.color, DEFAULT_COLOR)}"></span>`;
         return `
             <tr data-id="${d.id}">
                 <td>${swatch} ${name}</td>
