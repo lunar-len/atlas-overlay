@@ -326,7 +326,7 @@ export class ItemMarker extends Marker {
     // so when an editable marker/path overlaps a token we must yield to it —
     // otherwise a GM right-clicking the visibly-top marker only gets the scale
     // dialog and can't reach edit/delete. These are the higher-z layers to defer to.
-    static OVERLAY_LAYER_IDS = ["custom-layer", "custom-label-layer", "path-layer", "path-hit-layer"];
+    static OVERLAY_LAYER_IDS = ["custom-icon-sdf", "custom-icon-img", "custom-label-layer", "path-layer", "path-hit-layer"];
 
     onContextMenu(event, features) {
         if (!game.user.isGM) return false;
