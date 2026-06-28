@@ -1,8 +1,7 @@
 import { Marker } from "./marker.js";
-import { showContextMenu, escapeHtml, confirmDelete } from "../utils.js";
+import { showContextMenu, escapeHtml, confirmDelete, safeColor } from "../utils.js";
 import * as turf from "../../lib/turf/turf-bundle.js";
-
-const MODULE_ID = "atlas-overlay";
+import { MODULE_ID } from "../constants.js";
 const FLAG_KEY = "paths";
 const DEFAULT_COLOR = "#e0b040";
 const DEFAULT_TEXT_COLOR = "#ffffff";
@@ -394,7 +393,7 @@ export class PathMarker extends Marker {
         const name = p.label
             ? escapeHtml(p.label)
             : `<i style="color:#888">${game.i18n.localize("ATLAS.manager.unnamedPath")}</i>`;
-        const swatch = `<span class="globe-color-swatch" style="background:${p.color ?? DEFAULT_COLOR}"></span>`;
+        const swatch = `<span class="globe-color-swatch" style="background:${safeColor(p.color, DEFAULT_COLOR)}"></span>`;
         const dist = this._formatDistance(p.totalDistance);
         const pts = p.points.length;
         return `

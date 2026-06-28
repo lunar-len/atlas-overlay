@@ -2,8 +2,7 @@ import { MapMarkers } from "./markers-on-globe.js";
 import { createMap } from "./map.js";
 import { addHooks } from "./hooks.js";
 
-const MODULE_ID = "atlas-overlay";
-
+import { MODULE_ID } from "./constants.js";
 // ── Settings registration ─────────────────────────────────────────────
 function registerSettings() {
     game.settings.register(MODULE_ID, "mapTilesUrl", {
@@ -13,7 +12,7 @@ function registerSettings() {
         config: true,
         type: String,
         default: `pmtiles:///modules/${MODULE_ID}/lib/pathfinder-wiki-maps/data/golarion.pmtiles`,
-        onChange: () => ui.notifications.info("Reload the page to apply the new map URL.")
+        onChange: () => ui.notifications.info(game.i18n.localize("ATLAS.settings.mapTilesUrl.reload"))
     });
 
     game.settings.register(MODULE_ID, "pathStyle", {

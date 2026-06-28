@@ -1,8 +1,7 @@
 import { Marker } from "./marker.js";
 import { showContextMenu, scaleFieldHtml, wireScaleSliders, percentToScale, clampScaleValue } from "../utils.js";
 
-const MODULE_ID = "atlas-overlay";
-
+import { MODULE_ID } from "../constants.js";
 /**
  * Base class for Foundry document markers (tokens, notes).
  * Handles GeoJSON source/layer management, drag, hover, and image loading.

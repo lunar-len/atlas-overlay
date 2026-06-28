@@ -1,7 +1,6 @@
 import { ItemMarker } from "./item.js";
 
-const MODULE_ID = "atlas-overlay";
-
+import { MODULE_ID } from "../constants.js";
 export class NoteMarker extends ItemMarker {
     get type() { return "note"; }
     get sceneItems() { return new Set(this.scene.notes.map(n => n.id)); }

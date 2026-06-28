@@ -7,6 +7,8 @@ export class MapMarkers {
         this.projection = projection;
         this.is2D = false;
         this.hooks = new Set();
+        this._moveRAF = null;
+        this._pendingMove = null;
 
         // The globe HTML overlay covers the whole viewport, but Foundry's PIXI
         // canvas underneath still receives pointer events — so e.g. shift+click
@@ -38,6 +40,7 @@ export class MapMarkers {
     }
 
     destroy() {
+        if (this._moveRAF != null) { cancelAnimationFrame(this._moveRAF); this._moveRAF = null; }
         if (this._foundryCanvasEl) {
             this._foundryCanvasEl.style.pointerEvents = this._foundryCanvasOriginalPE ?? "";
             this._foundryCanvasEl = null;
@@ -129,11 +132,21 @@ export class MapMarkers {
     }
 
     _onMouseMove(event) {
-        const grouped = this._featuresAt(event.point);
-        for (const m of this.markers) {
-            const feats = this._collectFor(m, grouped);
-            m.onMouseMove?.(event, feats);
-        }
+        // MapLibre fires mousemove very frequently; coalesce to one feature query
+        // per animation frame so hover/drag stay smooth without querying every move.
+        this._pendingMove = event;
+        if (this._moveRAF != null) return;
+        this._moveRAF = requestAnimationFrame(() => {
+            this._moveRAF = null;
+            const e = this._pendingMove;
+            this._pendingMove = null;
+            if (!e || !this.map) return;
+            const grouped = this._featuresAt(e.point);
+            for (const m of this.markers) {
+                const feats = this._collectFor(m, grouped);
+                m.onMouseMove?.(e, feats);
+            }
+        });
     }
 
     _onMouseDown(event) {
@@ -184,6 +197,14 @@ export class MapMarkers {
     _collectFor(marker, grouped) {
         if (!marker.layerIDs?.length) return [];
         return marker.layerIDs.flatMap(id => grouped[id] ?? []);
+    }
+
+    /** True if a custom-marker icon or label is rendered under the given screen point. */
+    isOverCustomMarker(point) {
+        const custom = this.markers.find(m => m instanceof Marker.Custom);
+        const ids = (custom?.layerIDs ?? []).filter(id => this.map.getLayer(id));
+        if (!ids.length) return false;
+        return this.map.queryRenderedFeatures(point, { layers: ids }).length > 0;
     }
 
     // ── Initial view ──────────────────────────────────────────────────

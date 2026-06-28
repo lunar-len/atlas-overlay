@@ -1,4 +1,4 @@
-const MODULE_ID = "atlas-overlay";
+import { MODULE_ID } from "./constants.js";
 
 function wrapHook(id, hookID) {
     libWrapper.register(MODULE_ID, id, function (wrapped, ...args) {
