@@ -1,6 +1,6 @@
 {
     "name": "atlas-overlay",
-    "version": "0.2.0",
+    "version": "0.2.1",
     "description": "Atlas Overlay — interactive 3D globe / 2D map overlay module for Foundry VTT",
     "private": true,
     "type": "module",
