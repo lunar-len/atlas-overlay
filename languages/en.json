@@ -60,6 +60,7 @@
 
     "ATLAS.notification.drawPathActive": "Globe path drawing active — click to place waypoints, double-click or Enter to finish, Escape or right-click to cancel.",
     "ATLAS.notification.pingHint": "Long-press the globe to ping. Hold Alt for an alert ping, Shift to pull the camera.",
+    "ATLAS.notification.mapLoadError": "Globe map tiles failed to load. Check the Map Tiles File setting and that the source is reachable.",
 
     "ATLAS.dialog.confirmDelete.title": "Confirm Delete",
     "ATLAS.dialog.confirmDelete.body": "Delete <strong>{name}</strong>? This cannot be undone.",

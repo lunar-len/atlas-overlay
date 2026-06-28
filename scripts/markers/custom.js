@@ -1,5 +1,5 @@
 import { Marker } from "./marker.js";
-import { showContextMenu, scaleFieldHtml, wireScaleSliders, percentToScale, clampScaleValue } from "../utils.js";
+import { showContextMenu, scaleFieldHtml, wireScaleSliders, percentToScale, clampScaleValue, escapeHtml, confirmDelete } from "../utils.js";
 
 const MODULE_ID = "atlas-overlay";
 const FLAG_KEY = "custom-markers";
@@ -298,21 +298,13 @@ export class CustomMarker extends Marker {
         const marker = this.data.find(d => d.id === id);
         if (!marker) return false;
         if (confirm) {
-            const ok = await this._confirmDelete(marker.label || game.i18n.localize("ATLAS.manager.unnamedMarker"));
+            const ok = await confirmDelete(marker.label || game.i18n.localize("ATLAS.manager.unnamedMarker"));
             if (!ok) return false;
         }
         this.data = this.data.filter(d => d.id !== id);
         this._refreshFeatures();
         await this._saveToScene();
         return true;
-    }
-
-    async _confirmDelete(name) {
-        return Dialog.confirm({
-            title: game.i18n.localize("ATLAS.dialog.confirmDelete.title"),
-            content: `<p>${game.i18n.format("ATLAS.dialog.confirmDelete.body", { name })}</p>`,
-            defaultYes: false
-        });
     }
 
     // ── Manager dialog ────────────────────────────────────────────────
@@ -345,7 +337,7 @@ export class CustomMarker extends Marker {
 
     _renderManagerRow(d) {
         const name = d.label
-            ? this._escapeHtml(d.label)
+            ? escapeHtml(d.label)
             : `<i style="color:#888">${game.i18n.localize("ATLAS.manager.unnamedMarker")}</i>`;
         const coords = `${d.lat.toFixed(1)}°, ${d.lng.toFixed(1)}°`;
         const swatch = d.icon
@@ -391,12 +383,6 @@ export class CustomMarker extends Marker {
         });
     }
 
-    _escapeHtml(s) {
-        return String(s).replace(/[&<>"']/g, c => ({
-            "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
-        }[c]));
-    }
-
     _wireDialog(html) {
         const $html = html.jquery ? html : $(html);
         wireScaleSliders($html);
@@ -430,7 +416,7 @@ export class CustomMarker extends Marker {
             <form class="globe-dialog-form">
                 <div class="form-group">
                     <label>${game.i18n.localize("ATLAS.dialog.newMarker.label")}</label>
-                    <input name="label" type="text" value="${this._escapeAttr(label)}" placeholder="Marker name" autofocus />
+                    <input name="label" type="text" value="${escapeHtml(label)}" placeholder="Marker name" autofocus />
                 </div>
                 <div class="form-group checkbox-row">
                     <input name="showLabel" type="checkbox" ${showLabel ? "checked" : ""} />
@@ -447,7 +433,7 @@ export class CustomMarker extends Marker {
                 <div class="form-group">
                     <label>${game.i18n.localize("ATLAS.dialog.newMarker.icon")}</label>
                     <div class="globe-filepicker">
-                        <input name="icon" type="text" value="${this._escapeAttr(icon)}" placeholder="Default circle (leave empty)" />
+                        <input name="icon" type="text" value="${escapeHtml(icon)}" placeholder="Default circle (leave empty)" />
                         <button type="button" data-action="browse-icon" title="${browseTitle}">
                             <i class="fa-solid fa-file-image"></i>
                         </button>
@@ -472,16 +458,10 @@ export class CustomMarker extends Marker {
                 ${scaleFieldHtml({ labelText: game.i18n.localize("ATLAS.dialog.newMarker.labelScale"), name: "labelScale", value: labelScale })}
                 <div class="form-group">
                     <label>${game.i18n.localize("ATLAS.dialog.newMarker.journal")}</label>
-                    <input name="journalId" type="text" value="${this._escapeAttr(journalId)}" placeholder="Journal Entry ID" />
+                    <input name="journalId" type="text" value="${escapeHtml(journalId)}" placeholder="Journal Entry ID" />
                 </div>
             </form>
         `;
-    }
-
-    _escapeAttr(s) {
-        return String(s ?? "").replace(/[&<>"']/g, c => ({
-            "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
-        }[c]));
     }
 
     _readForm(html) {

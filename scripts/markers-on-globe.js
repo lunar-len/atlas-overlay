@@ -44,7 +44,7 @@ export class MapMarkers {
         }
         for (const m of this.markers) m.destroy?.();
         this._clearFoundryHooks();
-        this.map.remove();
+        this.map?.remove();
         this.map = null;
     }
 
@@ -183,22 +183,14 @@ export class MapMarkers {
 
     _collectFor(marker, grouped) {
         if (!marker.layerIDs?.length) return [];
-        const feats = marker.layerIDs.flatMap(id => grouped[id] ?? []);
-        feats.sort((a, b) => (a?.properties?.size ?? 1) - (b?.properties?.size ?? 1));
-        return feats;
+        return marker.layerIDs.flatMap(id => grouped[id] ?? []);
     }
 
     // ── Initial view ──────────────────────────────────────────────────
     _setInitialView() {
         const { x, y, scale } = this.scene.initial ?? {};
-        if (x && y) this.map.setCenter(this.sceneToLngLat(x, y));
+        if (x != null && y != null) this.map.setCenter(this.sceneToLngLat(x, y));
         if (scale) this.map.setZoom(scale);
-    }
-
-    async saveViewAsInitialPosition() {
-        const { lng, lat } = this.map.getCenter();
-        const { x, y } = this.lngLatToScene(lng, lat);
-        await this.scene.update({ initial: { x, y, scale: this.map.getZoom() } });
     }
 
     // ── Load persisted data ───────────────────────────────────────────

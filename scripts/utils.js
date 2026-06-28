@@ -78,6 +78,26 @@ export function wireScaleSliders(html) {
     });
 }
 
+/** Escape a string for safe interpolation into HTML text or attribute values. */
+export function escapeHtml(s) {
+    return String(s ?? "").replace(/[&<>"']/g, c => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+    }[c]));
+}
+
+/**
+ * Confirmation dialog for a destructive action, defaulting to "no".
+ * @param {string} name  Human-readable name of the thing being deleted.
+ * @returns {Promise<boolean>}
+ */
+export function confirmDelete(name) {
+    return Dialog.confirm({
+        title: game.i18n.localize("ATLAS.dialog.confirmDelete.title"),
+        content: `<p>${game.i18n.format("ATLAS.dialog.confirmDelete.body", { name })}</p>`,
+        defaultYes: false
+    });
+}
+
 /**
  * Display a floating context menu at the given native mouse event position.
  * Each item: { label: string, action: () => void, danger?: boolean }

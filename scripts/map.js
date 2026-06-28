@@ -3,10 +3,16 @@ import * as pmtiles from "../lib/pmtiles/pmtiles-bundle.js";
 
 const MODULE_ID = "atlas-overlay";
 
+// The pmtiles protocol is global to MapLibre; register it once and reuse the
+// Protocol instance (it also caches opened archives) across scene reloads.
+let pmtilesProtocol = null;
+
 export function createMap() {
     const root = `${location.protocol}//${location.host}/`;
-    const prot = new pmtiles.Protocol();
-    maplibregl.addProtocol("pmtiles", prot.tilev4);
+    if (!pmtilesProtocol) {
+        pmtilesProtocol = new pmtiles.Protocol();
+        maplibregl.addProtocol("pmtiles", pmtilesProtocol.tilev4);
+    }
 
     const tilesUrl = game.settings.get(MODULE_ID, "mapTilesUrl");
 
@@ -45,6 +51,18 @@ export function createMap() {
     map.on("style.load", () => {
         map.setProjection({ type: projection });
         Hooks.call(`${MODULE_ID}.style.load`, map);
+    });
+
+    // Surface tile/source failures (e.g. an incompatible or unreachable PMTiles
+    // source) to the user once, instead of leaving a silent blank globe.
+    let mapErrorNotified = false;
+    map.on("error", (e) => {
+        const msg = e?.error?.message ?? "";
+        console.warn(`[${MODULE_ID}] MapLibre error:`, e?.error ?? e);
+        if (!mapErrorNotified && /tile|pmtiles|source|parse/i.test(msg)) {
+            mapErrorNotified = true;
+            ui.notifications?.warn(game.i18n.localize("ATLAS.notification.mapLoadError"));
+        }
     });
 
     map.keyboard.disable();
