@@ -33,14 +33,33 @@ export class CustomMarker extends Marker {
     // ── Source / Layer IDs ────────────────────────────────────────────
     get sourceID() { return "custom-source"; }
     get source() { return this.map?.getSource(this.sourceID); }
-    get layerID() { return "custom-layer"; }
-    get layer() { return this.map?.getLayer(this.layerID); }
+    // Default-circle markers (SDF, tintable) and uploaded-image markers (raster)
+    // MUST live in separate symbol layers: MapLibre cannot mix SDF and non-SDF
+    // icons in one layer — it would tint raster images with icon-color and flicker
+    // the tint on zoom/pan as the render batching changes.
+    get iconSdfLayerID() { return "custom-icon-sdf"; }
+    get iconImgLayerID() { return "custom-icon-img"; }
     get labelSourceID() { return "custom-label-source"; }
     get labelSource() { return this.map?.getSource(this.labelSourceID); }
     get labelLayerID() { return "custom-label-layer"; }
     get labelLayer() { return this.map?.getLayer(this.labelLayerID); }
-    get layerIDs() { return [this.layerID, this.labelLayerID]; }
+    // Topmost-rendered first, so hit-testing (`_collectFor` → onGrab/onContextMenu)
+    // picks the marker the user actually sees on top: the raster image layer is
+    // added after — and so renders above — the SDF default-circle layer.
+    get layerIDs() { return [this.iconImgLayerID, this.iconSdfLayerID, this.labelLayerID]; }
     get sourceIDs() { return [this.sourceID, this.labelSourceID]; }
+
+    // Zoom-driven icon size with the per-marker manual scale baked into the
+    // interpolation OUTPUTS (MapLibre forbids ["zoom"] nested inside arithmetic).
+    // ~14px → ~38px on screen for the 48px source.
+    _iconSizeExpr() {
+        return ["interpolate", ["linear"], ["zoom"],
+            0, ["*", 0.3, ["coalesce", ["get", "iconScale"], 1]],
+            3, ["*", 0.45, ["coalesce", ["get", "iconScale"], 1]],
+            6, ["*", 0.65, ["coalesce", ["get", "iconScale"], 1]],
+            9, ["*", 0.85, ["coalesce", ["get", "iconScale"], 1]]
+        ];
+    }
 
     _createLayers() {
         if (!this.map) return;
@@ -48,30 +67,34 @@ export class CustomMarker extends Marker {
         if (!this.source) {
             this.map.addSource(this.sourceID, { type: "geojson", data: { type: "FeatureCollection", features: [] } });
         }
-        if (!this.layer) {
+        // SDF default circle — tinted by icon-color / halo (markers without an uploaded image).
+        if (!this.map.getLayer(this.iconSdfLayerID)) {
             this.map.addLayer({
-                id: this.layerID, type: "symbol", source: this.sourceID,
+                id: this.iconSdfLayerID, type: "symbol", source: this.sourceID,
+                filter: ["!", ["get", "hasImage"]],
                 layout: {
-                    "icon-image": ["coalesce", ["get", "imageKey"], DEFAULT_ICON_KEY],
-                    // Scale icons by zoom: small dot when globe is zoomed out, full size when zoomed in.
-                    // Max image is 48px; multipliers below produce ~14px → ~38px on screen.
-                    // The per-marker manual scale is baked into the interpolation OUTPUTS —
-                    // MapLibre forbids ["zoom"] nested inside arithmetic like ["*", interp, …].
-                    "icon-size": ["interpolate", ["linear"], ["zoom"],
-                        0, ["*", 0.3, ["coalesce", ["get", "iconScale"], 1]],
-                        3, ["*", 0.45, ["coalesce", ["get", "iconScale"], 1]],
-                        6, ["*", 0.65, ["coalesce", ["get", "iconScale"], 1]],
-                        9, ["*", 0.85, ["coalesce", ["get", "iconScale"], 1]]
-                    ],
+                    "icon-image": DEFAULT_ICON_KEY,
+                    "icon-size": this._iconSizeExpr(),
                     "icon-allow-overlap": true,
                     "icon-ignore-placement": true,
                 },
                 paint: {
-                    // icon-color and icon-halo-* only apply to SDF icons (our default circle).
-                    // Raster images (user uploads) ignore these properties and render with their own colors.
                     "icon-color": ["coalesce", ["get", "color"], DEFAULT_COLOR],
                     "icon-halo-color": ["coalesce", ["get", "haloColor"], DEFAULT_HALO_COLOR],
                     "icon-halo-width": 1.5
+                }
+            });
+        }
+        // Raster uploaded images — rendered with their own colors, never tinted.
+        if (!this.map.getLayer(this.iconImgLayerID)) {
+            this.map.addLayer({
+                id: this.iconImgLayerID, type: "symbol", source: this.sourceID,
+                filter: ["get", "hasImage"],
+                layout: {
+                    "icon-image": ["get", "imageKey"],
+                    "icon-size": this._iconSizeExpr(),
+                    "icon-allow-overlap": true,
+                    "icon-ignore-placement": true,
                 }
             });
         }
@@ -156,6 +179,7 @@ export class CustomMarker extends Marker {
                 properties: {
                     id: d.id,
                     imageKey: this._iconKey(d.icon),
+                    hasImage: !!d.icon,   // routes to the raster vs SDF icon layer
                     color: d.color ?? DEFAULT_COLOR,
                     haloColor: d.haloColor ?? DEFAULT_HALO_COLOR,
                     iconScale: clampScaleValue(d.iconScale)
@@ -575,7 +599,7 @@ export class CustomMarker extends Marker {
     }
 
     onContextMenu(event, features) {
-        const markerFeature = (features[this.layerID] ?? []).concat(features[this.labelLayerID] ?? [])[0];
+        const markerFeature = this.layerIDs.flatMap(id => features[id] ?? [])[0];
 
         if (markerFeature) {
             const id = markerFeature.properties.id;
