@@ -5,8 +5,23 @@
 #   - release:published  — normal flow. Publish a release in the web UI; this
 #     workflow fires automatically and attaches the assets.
 #   - workflow_dispatch  — manual rerun against an existing tag. Useful if the
-#     normal trigger missed an event (e.g. publish happened during a deploy)
-#     or if you need to re-package a fix without bumping the version.
+#     normal trigger missed an event, or to re-package a fix without bumping.
+#
+# PMTiles source:
+#   The Golarion tileset is not in git (too large); it's downloaded at build
+#   time. The source URL resolves in this order:
+#     1. the workflow_dispatch `pmtiles_url` input, then
+#     2. the repository variable `PMTILES_URL`, then
+#     3. the canonical pathfinderwiki build.
+#   The downloaded file is VALIDATED (magic, version, MVT tile type, size)
+#   before packaging — a build that pulls an incompatible or truncated tileset
+#   fails loudly instead of shipping a broken release.
+#
+#   Why the validation exists: pathfinderwiki rebuilds golarion.pmtiles
+#   periodically and once shipped a non-MVT `tile_type=6` build that our bundled
+#   MapLibre/PMTiles stack could not parse ("Expected varint not more than 10
+#   bytes"), producing a blank globe. If that recurs, the build now fails; pin
+#   `PMTILES_URL` (repo variable) to a known-good MVT build to release anyway.
 
 name: Release
 
@@ -18,6 +33,9 @@ on:
       tag:
         description: 'Existing release tag to (re)attach assets to (e.g. v0.1.0)'
         required: true
+      pmtiles_url:
+        description: 'Override PMTiles source URL (else repo var PMTILES_URL, else pathfinderwiki)'
+        required: false
 
 permissions:
   contents: write
@@ -40,15 +58,48 @@ jobs:
         with:
           ref: ${{ steps.target.outputs.tag }}
 
-      # PMTiles is gitignored; pull the canonical Golarion build from the wiki.
       - name: Fetch Golarion PMTiles
+        env:
+          PMTILES_URL: ${{ github.event.inputs.pmtiles_url || vars.PMTILES_URL || 'https://map.pathfinderwiki.com/golarion.pmtiles' }}
         run: |
           mkdir -p lib/pathfinder-wiki-maps/data
+          echo "Downloading PMTiles from: $PMTILES_URL"
           curl -fL --retry 3 --retry-delay 5 \
             -A "atlas-overlay-release-workflow" \
-            https://map.pathfinderwiki.com/golarion.pmtiles \
+            "$PMTILES_URL" \
             -o lib/pathfinder-wiki-maps/data/golarion.pmtiles
           ls -lh lib/pathfinder-wiki-maps/data/golarion.pmtiles
+
+      - name: Validate PMTiles (magic, version, MVT tile type, size)
+        run: |
+          PMT=lib/pathfinder-wiki-maps/data/golarion.pmtiles
+          byte() { dd if="$PMT" bs=1 skip="$1" count=1 2>/dev/null | od -An -tu1 | tr -d ' '; }
+
+          magic=$(head -c 7 "$PMT")
+          if [ "$magic" != "PMTiles" ]; then
+            echo "::error::Not a PMTiles file (magic='$magic'). Download likely failed or returned an error page."
+            exit 1
+          fi
+
+          ver=$(byte 7)
+          ttype=$(byte 99)   # PMTiles v3 header: byte 99 = tile type (1 = MVT)
+          size=$(stat -c%s "$PMT")
+
+          echo "PMTiles: version=$ver tile_type=$ttype size=$size bytes"
+
+          if [ "$ver" != "3" ]; then
+            echo "::error::Unexpected PMTiles version $ver (expected 3)."
+            exit 1
+          fi
+          if [ "$ttype" != "1" ]; then
+            echo "::error::tile_type=$ttype, expected 1 (MVT). The source build is incompatible with our renderer — pin the PMTILES_URL repo variable to a known-good MVT build, then re-run."
+            exit 1
+          fi
+          if [ "$size" -lt 52428800 ]; then
+            echo "::error::PMTiles is only $size bytes (< 50 MB) — likely truncated."
+            exit 1
+          fi
+          echo "PMTiles validation passed."
 
       - name: Build module.zip
         run: |
